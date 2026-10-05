@@ -1,6 +1,5 @@
 {
   "_comment": "Copy this file to config.json and fill in your own details. config.json is git-ignored.",
-
   "name": "Your Name",
   "email": "you@university.edu",
   "website": "yourname.github.io",
@@ -8,17 +7,24 @@
   "city": "City, ST 00000",
   "season": "2026-27",
   "accent_color": "0021A5",
-
-  "letter_writers": ["Writer One", "Writer Two", "Writer Three"],
+  "letter_writers": [
+    "Writer One",
+    "Writer Two",
+    "Writer Three"
+  ],
   "letter_writers_sentence": "Writer One (chair), Writer Two, and Writer Three",
-
   "job_market_dir": "~/Job Market 2026-27",
   "tracker_file": "08_Applications/Job_Market_Application_Tracker.xlsx",
   "cover_letter_dir": "09_Cover_Letters/letters",
-
-  "standard_packet": ["cover letter", "CV", "job market paper", "research statement",
-                      "teaching statement", "teaching evaluations"],
-
+  "letter_share_file": "~/Dropbox/Letter Requests (shared)/Letter_Requests.xlsx",
+  "standard_packet": [
+    "cover letter",
+    "CV",
+    "job market paper",
+    "research statement",
+    "teaching statement",
+    "teaching evaluations"
+  ],
   "cover_letter": {
     "intro": "I am writing to apply for the {position} position in the {dept} at {employer}. I am a Ph.D. candidate in Economics at Your University and expect to complete my degree in 2027. My research is in <your fields>.",
     "jmp": "My job market paper, ``<Title>,'' asks <question>. Using <data>, I find <main result in one or two sentences>.",

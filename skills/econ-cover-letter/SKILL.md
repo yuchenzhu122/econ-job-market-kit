@@ -40,7 +40,8 @@ paragraphs (intro, JMP, other research, teaching, closing) live in `config.json`
 6. **Update the tracker** (if the file is open in Excel and saving fails, ask the user to
    close it): Cover Letter = `Drafted`; remove "cover letter" from Still Need; append
    `CL: <file name>` to Notes. Save with openpyxl normally (never `data_only=True`).
-7. **Report** in the user's language: the fit paragraph (quoted), the variant, the PDF
+7. **Refresh the shared letter list**: `python3 <repo>/scripts/export_letter_list.py`.
+8. **Report** in the user's language: the fit paragraph (quoted), the variant, the PDF
    path, and anything in the posting to check (extra materials, page limits). The user
    sets `Final` after reviewing.
 

@@ -1,6 +1,6 @@
 ---
 name: econ-tracker-fill
-description: Fill in an economics job market application tracker from posting links. Use when the user says "fill the tracker", "补全追踪表", "read the links in my tracker", or has pasted job links into the tracker's Link column and wants the rest of each row completed. Reads each posting and fills Employer, Position, Type, Track, Apply Via, Deadline, Letters?, Still Need, Notes. Does not write cover letters (that is econ-cover-letter).
+description: Fill in an economics job market application tracker from posting links. Use when the user says "fill the tracker", "补全追踪表", "read the links in my tracker", or has pasted job links into the tracker's Link column and wants the rest of each row completed. Also use for "update the letter list", "更新老师那页", "refresh the letter writers' file". Reads each posting and fills Employer, Position, Type, Track, Apply Via, Deadline, Letters?, Still Need, Notes. Does not write cover letters (that is econ-cover-letter).
 ---
 
 # Fill tracker rows from posting links
@@ -44,7 +44,9 @@ writer, Notes. Dropdown values come from the `Lists` sheet; only write values li
    (academic/policy) or "Not needed" (industry). Write dates as real dates. Load and save
    with openpyxl normally (never `data_only=True`). If saving fails, ask the user to close
    the file in Excel and retry.
-5. **Report** (in the user's language): a short table of filled rows (Employer, Position,
+5. **Refresh the shared letter list**: run `python3 <repo>/scripts/export_letter_list.py`. It rewrites
+   `letter_share_file` from config.json (the file the letter writers have a link to).
+6. **Report** (in the user's language): a short table of filled rows (Employer, Position,
    Deadline, Apply Via, Letters?, Still Need), rows you could not read and why, and what to
    double-check (inferred deadlines, ambiguous Type). Offer to draft cover letters.
 
