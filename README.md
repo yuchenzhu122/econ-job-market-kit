@@ -52,6 +52,36 @@ your job market files live (`job_market_dir`), and the fixed cover-letter paragr
 5. Share the file at `letter_share_file` with your letter writers once (view-only link).
    Claude refreshes it after every tracker update, or run `python3 scripts/export_letter_list.py`.
 
+## Job scan
+
+| Source | How it is read | Best for |
+|---|---|---|
+| JOE | AEA's XML export | US and international academic, policy and nonacademic jobs |
+| EconJobMarket | public JSON feed | international and policy jobs |
+| Chronicle Jobs | Economics category RSS | liberal arts, regional and teaching-focused colleges |
+| Inside Higher Ed Careers | Economics faculty RSS | same, plus some Asian and Middle East schools |
+
+HigherEdJobs blocks automated access, so it is not scanned; most of its economics faculty
+ads also appear on Chronicle or Inside Higher Ed. If you want to be sure, set up a free
+HigherEdJobs "Job Agent" email alert for Economics faculty jobs.
+
+How a run works:
+
+1. `scan_postings.py` fetches all four sources (about 2 minutes), drops postdoc, visiting,
+   adjunct, part-time, senior-only, other-discipline and expired ads, merges the same job
+   posted on several boards (the other links go into Flags), and skips anything seen
+   before or already in your tracker. Filters live in `config.json` → `scan`.
+2. Claude reads the rest, rates each one High / Medium / Low against `profile` in
+   `config.json`, reads the full ad for High and Medium (eligibility, deadline, extra
+   materials), and writes them to the **Leads** sheet with a one-line Why and Flags.
+3. You set Decision = Add / Maybe / Pass. "add my leads to the tracker" moves the Add rows
+   into the Tracker.
+
+To run it on a schedule, create a Claude desktop scheduled task (e.g. Mondays and
+Thursdays at 8 am) whose prompt is "Run the econ-job-scan skill and summarize the result".
+The scan state (`scan_state.json`), the raw candidates (`scan_new.json`) and Claude's
+ratings (`scan_eval.json`) are kept next to the tracker.
+
 Statements: `python3 scripts/md2pdf.py research_statement.md "Research Statement" refs.tex`
 
 ## Notes
@@ -65,6 +95,9 @@ Statements: `python3 scripts/md2pdf.py research_statement.md "Research Statement
 给经济学 job market 用的小工具包，配合 Claude Code 使用：
 
 - **自动找职位**：每周自动扫 JOE、EconJobMarket、Chronicle Jobs 和 Inside Higher Ed Careers（HigherEdJobs 禁止自动抓取，没有包含），按你的 CV 和偏好打分（High / Medium / Low），写进追踪表的 Leads 页；你选 Add 的会转进主表。
+  - 结果在哪看：打开追踪表 Excel，第三个标签页 **Leads**。按 Fit 和截止日期排序，Why 写了为什么适合，Flags 写了要注意的地方（要 diversity statement、只是 review 开始日期、同一职位也挂在别的网站等）。
+  - 怎么处理：在 Decision 一列选 Add / Maybe / Pass，然后跟 Claude 说"把 leads 加到追踪表"，Add 的就会进主表。
+  - 每次运行的简报在 Claude 桌面版左侧 **Scheduled** 里对应任务的运行记录中。
 - **给推荐人的分享文件**：只包含需要推荐信的职位，放在共享网盘里，链接分享一次就行，每次更新追踪表后自动刷新。
 - **追踪表**：把职位链接贴进 Link 一列，跟 Claude 说"补全追踪表"，它会读链接并填好学校、职位、截止日期、投递平台、是否要推荐信、额外材料。自带"给推荐人看"的页面，按截止日期自动排序。
 - **Cover letter**：说"给 XX 写 cover letter"，它会读职位、写一段"为什么适合这个学校"，生成一页 PDF（研究型 / 教学型两个版本），并在追踪表里标为 Drafted。
