@@ -22,7 +22,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter as L
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from common import jm_path, load_config
+from common import jm_path, load_config, restore_dropdowns
 
 COLS = [("Found", 11), ("Fit", 8), ("Employer", 26), ("Position", 30), ("Track", 12), ("Type", 15),
         ("Location", 16), ("Deadline", 11), ("Why", 44), ("Flags", 26), ("Source", 7), ("Link", 22),
@@ -100,8 +100,34 @@ def add(cfg, path, items):
             ws.cell(row=r, column=12).hyperlink = x["url"]
             ws.cell(row=r, column=12).font = Font(name=FONT, size=10, color="0563C1", underline="single")
         r += 1
+    restore_dropdowns(wb, cfg["letter_writers"])
     wb.save(path)
     print(f"added {len(items)} lead(s) to {path}")
+
+
+PLATFORMS = [("econjobmarket", "EconJobMarket"), ("academicjobsonline", "AcademicJobsOnline"),
+             ("interfolio", "Interfolio"), ("chronicle.com", "Chronicle Jobs"),
+             ("insidehighered", "Inside Higher Ed Careers"), ("usajobs", "USAJOBS")]
+
+
+def ad_texts(cfg):
+    """url -> ad text from the last scan, used to guess where to apply."""
+    import os
+    p = os.path.join(jm_path(cfg, os.path.dirname(cfg["tracker_file"])), "scan_new.json")
+    try:
+        return {x["url"]: x.get("text", "") for x in json.load(open(p, encoding="utf-8"))["candidates"]}
+    except (OSError, ValueError, KeyError):
+        return {}
+
+
+def apply_via(url, text):
+    t = (text or "").lower()
+    for key, name in PLATFORMS[:3] + PLATFORMS[5:]:   # where the ad says to apply
+        if key in t:
+            return name
+    if "econjobmarket" in (url or ""):
+        return "EconJobMarket"
+    return "Employer website"      # Chronicle / IHE ads send you to the employer's site
 
 
 def promote(cfg, path):
@@ -113,27 +139,39 @@ def promote(cfg, path):
     nxt = 5
     while tr.cell(row=nxt, column=H["Employer"]).value not in (None, ""):
         nxt += 1
+    texts = ad_texts(cfg)
     moved = []
     type_map = {"Tenure-track": "Tenure-track", "Teaching-focused": "Teaching-focused",
                 "Fed / Central bank": "Fed / Central bank", "Government": "Government",
                 "Think tank / Research": "Think tank / Research"}
     for r in range(5, lead.max_row + 1):
-        if lead.cell(row=r, column=13).value != "Add":
+        if str(lead.cell(row=r, column=13).value or "").strip().lower() != "add":
             continue
         g = lambda c: lead.cell(row=r, column=c).value
+        text = texts.get(g(12), "")
+        # academic and policy ads nearly always want letters; say No only if a full ad never mentions them
+        letters = "No" if len(text) > 1500 and not re.search(r"letter|referee|reference|recommend", text, re.I) else "Yes"
         row = {"Track": g(5), "Employer": g(3), "Position": g(4), "Type": type_map.get(g(6), "Other"),
-               "Link": g(12), "Deadline": g(8), "Status": "Not started",
-               "Cover Letter": "To write", "Notes": f"From scan ({g(2)} fit): {g(9) or ''} {g(10) or ''}".strip()}
+               "Apply Via": apply_via(g(12), text), "Link": g(12), "Deadline": g(8), "Status": "Not started",
+               "Cover Letter": "To write", "Letters?": letters,
+               "Notes": (f"From scan ({g(2)} fit): {g(9) or ''} | {g(10) or ''} | Apply Via and Letters? "
+                         f"guessed from the ad; check.").strip()}
         for h, v in row.items():
-            if h in H:
-                tr.cell(row=nxt, column=H[h], value=v)
+            if h in H and v not in (None, ""):
+                c = tr.cell(row=nxt, column=H[h], value=v)
+                c.font = Font(name=FONT, size=10)
+        if g(8):
+            tr.cell(row=nxt, column=H["Deadline"]).number_format = "mmm d, yyyy"
         if g(12):
             tr.cell(row=nxt, column=H["Link"]).hyperlink = g(12)
+            tr.cell(row=nxt, column=H["Link"]).font = Font(name=FONT, size=10, color="0563C1", underline="single")
         lead.cell(row=r, column=13, value="Added")
         moved.append(g(3))
         nxt += 1
+    restore_dropdowns(wb, cfg["letter_writers"])
     wb.save(path)
     print(f"promoted {len(moved)}: {moved}")
+    return moved
 
 
 if __name__ == "__main__":

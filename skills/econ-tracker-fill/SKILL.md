@@ -46,7 +46,9 @@ writer, Notes. Dropdown values come from the `Lists` sheet; only write values li
 4. **Write safely**: never overwrite a cell the user filled; only fill empty cells (Notes:
    append). If empty, set Status to "Not started" and Cover Letter to "To write"
    (academic/policy) or "Not needed" (industry). Write dates as real dates. Load and save
-   with openpyxl normally (never `data_only=True`). If saving fails, ask the user to close
+   with openpyxl normally (never `data_only=True`), and call
+   `restore_dropdowns(wb, cfg["letter_writers"])` from `<repo>/scripts/common.py` right before
+   `wb.save` (Excel re-saves the dropdowns in a format openpyxl drops). If saving fails, ask the user to close
    the file in Excel and retry.
 5. **Refresh the shared letter list**: run `python3 <repo>/scripts/export_letter_list.py`. It rewrites
    `letter_share_file` from config.json (the file the letter writers have a link to).

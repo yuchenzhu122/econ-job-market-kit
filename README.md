@@ -16,6 +16,7 @@ matching PDFs; and give your letter writers a list that updates itself.
 | `scripts/export_letter_list.py` | Writes a separate, view-only Excel file with only the positions that need letters (deadline, where to submit, link, each writer's status) to a shared Dropbox/OneDrive/Google Drive folder. Share its link once; re-running keeps the same file, so the link always shows the latest list. |
 | `scripts/scan_postings.py` | Pulls current postings from JOE (XML export), EconJobMarket (public JSON feed), and the Economics category RSS of Chronicle Jobs and Inside Higher Ed Careers (good for teaching-focused and regional colleges; HigherEdJobs blocks automated access and is not scanned), filters by rank, field, deadline and section, and skips ones already seen. |
 | `scripts/leads.py` | Adds rated postings to a **Leads** sheet in the tracker, and moves the ones you mark Add into the Tracker. |
+| `scripts/update_tracker.py` | One step, no Claude needed: moves Leads marked Add into the Tracker (guessing Apply Via and Letters? from the ad) and refreshes the letter-writer file. Refuses to run while Excel has the tracker open. Put a double-clickable `Update Tracker.command` next to the tracker (see below). |
 | `scripts/md2pdf.py` | Converts a Markdown research or teaching statement into a PDF with the same letterhead. |
 | `skills/econ-tracker-fill` | Claude Code skill: reads the links in your tracker and fills employer, position, deadline, where to apply, whether letters are needed, and extra materials. |
 | `skills/econ-job-scan` | Claude Code skill: runs the scan, reads each new posting, rates fit (High / Medium / Low) against `profile` in config.json, and writes the Leads sheet. Schedule it (e.g. Mon and Thu mornings) as a Claude desktop scheduled task. |
@@ -82,6 +83,15 @@ Thursdays at 8 am) whose prompt is "Run the econ-job-scan skill and summarize th
 The scan state (`scan_state.json`), the raw candidates (`scan_new.json`) and Claude's
 ratings (`scan_eval.json`) are kept next to the tracker.
 
+Double-click shortcut (macOS): save this as `Update Tracker.command` next to your tracker and
+run `chmod +x` on it once.
+
+```bash
+#!/bin/bash
+python3 "$HOME/econ-job-market-kit/scripts/update_tracker.py"
+read -n 1 -s -r -p "Press any key to close."
+```
+
 Statements: `python3 scripts/md2pdf.py research_statement.md "Research Statement" refs.tex`
 
 ## Notes
@@ -96,7 +106,7 @@ Statements: `python3 scripts/md2pdf.py research_statement.md "Research Statement
 
 - **自动找职位**：每周自动扫 JOE、EconJobMarket、Chronicle Jobs 和 Inside Higher Ed Careers（HigherEdJobs 禁止自动抓取，没有包含），按你的 CV 和偏好打分（High / Medium / Low），写进追踪表的 Leads 页；你选 Add 的会转进主表。
   - 结果在哪看：打开追踪表 Excel，第三个标签页 **Leads**。按 Fit 和截止日期排序，Why 写了为什么适合，Flags 写了要注意的地方（要 diversity statement、只是 review 开始日期、同一职位也挂在别的网站等）。
-  - 怎么处理：在 Decision 一列选 Add / Maybe / Pass，然后跟 Claude 说"把 leads 加到追踪表"，Add 的就会进主表。
+  - 怎么处理：在 Decision 一列选 Add / Maybe / Pass，存盘并关掉 Excel，双击追踪表旁边的 `Update Tracker.command`（或跟 Claude 说"把 leads 加到追踪表"），Add 的就会进主表，推荐人分享表也会一起刷新。
   - 每次运行的简报在 Claude 桌面版左侧 **Scheduled** 里对应任务的运行记录中。
 - **给推荐人的分享文件**：只包含需要推荐信的职位，放在共享网盘里，链接分享一次就行，每次更新追踪表后自动刷新。
 - **追踪表**：把职位链接贴进 Link 一列，跟 Claude 说"补全追踪表"，它会读链接并填好学校、职位、截止日期、投递平台、是否要推荐信、额外材料。自带"给推荐人看"的页面，按截止日期自动排序。

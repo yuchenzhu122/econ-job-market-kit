@@ -52,3 +52,27 @@ def letterhead(cfg):
 \pagestyle{empty}
 \setlength{\parindent}{0pt}
 """
+
+
+def restore_dropdowns(wb, writers):
+    """Excel re-saves the Tracker's cross-sheet dropdowns in an extension format openpyxl drops on
+    load. Call before saving the workbook with openpyxl to put the dropdowns back."""
+    from openpyxl.utils import get_column_letter as L
+    from openpyxl.worksheet.datavalidation import DataValidation
+    tr, li = wb["Tracker"], wb["Lists"]
+    have = {str(c) for v in tr.data_validations.dataValidation for c in v.sqref.ranges}
+    lists = {li.cell(row=3, column=c).value: L(c) for c in range(1, li.max_column + 1) if li.cell(row=3, column=c).value}
+    H = {tr.cell(row=4, column=c).value: L(c) for c in range(1, tr.max_column + 1) if tr.cell(row=4, column=c).value}
+    want = {"Track": "Track", "Type": "Type", "Apply Via": "Platform", "Status": "Status",
+            "Letters?": "Yes/No", "Cover Letter": "Cover Letter", **{w: "Letter" for w in writers}}
+    last = max(154, tr.max_row)
+    for head, name in want.items():
+        if head not in H or name not in lists:
+            continue
+        rng = f"{H[head]}5:{H[head]}{last}"
+        if any(r.startswith(H[head] + "5:") for r in have):
+            continue
+        col = lists[name]
+        v = DataValidation(type="list", formula1=f"=Lists!${col}$4:${col}$30", allow_blank=True)
+        tr.add_data_validation(v)
+        v.add(rng)
