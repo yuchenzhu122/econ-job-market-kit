@@ -65,28 +65,32 @@ def joe_postings():
     if not m:
         raise RuntimeError("JOE export link not found")
     xml = fetch("https://www.aeaweb.org" + html.unescape(m.group(1)))
+    # positions sit inside <year joe_year_ID="2026"><issue joe_issue_ID="2">; the listing URL
+    # is JOE_ID=<year>-<2-digit issue>_<jp_id>
+    marks = [(m.start(), "year" if m.group(1) else "issue", m.group(2) or m.group(4)) for m in
+             re.finditer(r'<(year) joe_year_ID="(\d+)"|<(issue) joe_issue_ID="(\d+)"', xml)]
     out = []
-    for p in re.findall(r"<position jp_id=\"(\d+)\">(.*?)</position>", xml, re.S):
-        jid, body = p
+    for p in re.finditer(r"<position jp_id=\"(\d+)\">(.*?)</position>", xml, re.S):
+        jid, body = p.group(1), p.group(2)
+        year = next((v for pos, k, v in reversed(marks) if k == "year" and pos < p.start()), "")
+        issue = next((v for pos, k, v in reversed(marks) if k == "issue" and pos < p.start()), "")
         g = lambda t: clean((re.search(rf"<{t}>(.*?)</{t}>", body, re.S) or [None, ""])[1])
         countries = re.findall(r"<country>(.*?)</country>", body)
         cities = re.findall(r"<city>(.*?)</city>", body)
         out.append({
             "source": "JOE", "id": "JOE-" + jid,
-            "url": f"https://www.aeaweb.org/joe/listing.php?JOE_ID=",  # completed below
-            "jid": jid, "section": g("jp_section"), "title": g("jp_title"),
-            "employer": g("jp_institution"), "department": " / ".join(x for x in (g("jp_division"), g("jp_department")) if x),
-            "location": ", ".join(x for x in (clean(cities[0]) if cities else "", clean(countries[0]) if countries else "") if x),
+            "url": (f"https://www.aeaweb.org/joe/listing.php?JOE_ID={year}-{int(issue):02d}_{jid}"
+                    if year and issue else "https://www.aeaweb.org/joe/listings"),
+            "section": g("jp_section"), "title": g("jp_title"),
+            "employer": g("jp_institution"),
+            "department": " / ".join(x for x in (g("jp_division"), g("jp_department")) if x),
+            "location": ", ".join(x for x in (clean(cities[0]) if cities else "",
+                                              clean(countries[0]) if countries else "") if x),
             "deadline": g("jp_application_deadline")[:10],
             "fields": [c for c in re.findall(r"<jc_code>(.*?)</jc_code>", body)],
             "field_names": [clean(c) for c in re.findall(r"<jc_description>(.*?)</jc_description>", body)],
             "text": g("jp_full_text"),
         })
-    # JOE listing URLs need the issue id; the listings page lists JOE_IDs ending in _<jp_id>
-    ids = dict((i.split("_")[-1], i) for i in re.findall(r"JOE_ID=([\w-]+)", page))
-    for x in out:
-        x["url"] = ("https://www.aeaweb.org/joe/listing.php?JOE_ID=" + ids[x["jid"]]) if x["jid"] in ids else \
-            "https://www.aeaweb.org/joe/listings (search: " + x["employer"] + ")"
     return out
 
 
@@ -241,7 +245,7 @@ def main():
             # work-authorization sentences, kept even when the ad text is cut below
             x["visa_text"] = " ".join(dict.fromkeys(m.strip() for m in VISA.findall(x["text"])))[:800]
             x["text"] = x["text"][:5000]
-            x.pop("jid", None); x.pop("end", None)
+            x.pop("end", None)
             new.append(x)
         else:
             stats[reason] = stats.get(reason, 0) + 1
