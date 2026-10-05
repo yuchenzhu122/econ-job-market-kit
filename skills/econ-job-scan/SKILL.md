@@ -45,9 +45,12 @@ ranks first). Tracker = `<job_market_dir>/<tracker_file>`. Work files go next to
    eligibility (degree timing, years since PhD, citizenship or language requirements,
    teaching load), and note anything that changes the rating.
    **Work authorization** (compare with `profile.work_authorization`):
-   - Skip if the ad requires citizenship or permanent residency the user lacks, says it will
-     not sponsor visas ("unable to sponsor", "must be authorized to work without sponsorship"),
-     or requires a security clearance.
+   - Skip if the ad requires citizenship or permanent residency the user lacks, or requires a
+     security clearance (clearances are for citizens only).
+   - If the ad says it will not sponsor visas ("sponsorship is not available", "must be
+     authorized to work without sponsorship"), do not Skip: rate Low and put "不提供签证
+     sponsorship（OPT 期间可做，之后需自行解决身份）" first in flags, quoting the ad. The user
+     may be able to work on OPT / STEM OPT for a while.
    - US federal agencies (BLS, Census, BEA, Treasury, USDA ERS, CBO, etc.) usually hire only
      citizens, but do not Skip them unless the ad itself excludes the user: rate Low and put
      "联邦机构，通常要求公民身份" (or in English if the user writes English) first in flags, so
