@@ -14,7 +14,7 @@ matching PDFs; and give your letter writers a list that updates itself.
 | `scripts/build_tracker.py` | Builds an Excel tracker: one row per job, deadline countdown, academic / industry / government tracks, a **For Letter Writers** tab sorted by deadline, a summary tab, and the AEA key dates. |
 | `scripts/make_letter.py` | One-page cover letter in two variants (`research` or `teaching` first). Your fixed paragraphs live in `config.json`; only a short "fit" paragraph changes per school. |
 | `scripts/export_letter_list.py` | Writes a separate, view-only Excel file with only the positions that need letters (deadline, where to submit, link, each writer's status) to a shared Dropbox/OneDrive/Google Drive folder. Share its link once; re-running keeps the same file, so the link always shows the latest list. |
-| `scripts/scan_postings.py` | Pulls current postings from JOE (XML export), EconJobMarket (public JSON feed), and the Economics category RSS of Chronicle Jobs and Inside Higher Ed Careers (good for teaching-focused and regional colleges; HigherEdJobs blocks automated access and is not scanned), filters by rank, field, deadline and section, and skips ones already seen. |
+| `scripts/scan_postings.py` | Pulls current postings from JOE (XML export), EconJobMarket (public JSON feed), the IMF and World Bank career sites, and the Economics category RSS of Chronicle Jobs and Inside Higher Ed Careers (good for teaching-focused and regional colleges; HigherEdJobs blocks automated access and is not scanned), filters by rank, field, deadline and section, and skips ones already seen. |
 | `scripts/leads.py` | Adds rated postings to a **Leads** sheet in the tracker, and moves the ones you mark Add into the Tracker. |
 | `scripts/update_tracker.py` | One step, no Claude needed: moves Leads marked Add into the Tracker (guessing Apply Via and Letters? from the ad) and refreshes the letter-writer file. If Excel has the tracker open, it asks Excel to save and close it, then reopens it. The first run also adds a clickable **▶ Update Tracker** link at the top of the Tracker and Leads sheets, which runs it through a macOS Shortcuts shortcut (see below). |
 | `scripts/md2pdf.py` | Converts a Markdown research or teaching statement into a PDF with the same letterhead. |
@@ -62,6 +62,8 @@ your job market files live (`job_market_dir`), the fixed cover-letter paragraphs
 | EconJobMarket | public JSON feed | international and policy jobs |
 | Chronicle Jobs | Economics category RSS | liberal arts, regional and teaching-focused colleges |
 | Inside Higher Ed Careers | Economics faculty RSS | same, plus some Asian and Middle East schools |
+| IMF | Workday career site (public JSON) | Economist Program and other IMF jobs |
+| World Bank Group | Cornerstone career site (public search) | economist, research and data jobs (titles filtered) |
 
 HigherEdJobs blocks automated access, so it is not scanned; most of its economics faculty
 ads also appear on Chronicle or Inside Higher Ed. If you want to be sure, set up a free
@@ -120,7 +122,7 @@ Statements: `python3 scripts/md2pdf.py research_statement.md "Research Statement
 
 给经济学 job market 用的小工具包，配合 Claude Code 使用：
 
-- **自动找职位**：每周自动扫 JOE、EconJobMarket、Chronicle Jobs 和 Inside Higher Ed Careers（HigherEdJobs 禁止自动抓取，没有包含），按你的 CV 和偏好打分（High / Medium / Low），写进追踪表的 Leads 页；你选 Add 的会转进主表。
+- **自动找职位**：每周自动扫 JOE、EconJobMarket、IMF、World Bank、Chronicle Jobs 和 Inside Higher Ed Careers（HigherEdJobs 禁止自动抓取，没有包含），按你的 CV 和偏好打分（High / Medium / Low），写进追踪表的 Leads 页；你选 Add 的会转进主表。
   - 结果在哪看：打开追踪表 Excel，第三个标签页 **Leads**。按 Fit 和截止日期排序，Why 写了为什么适合，Flags 写了要注意的地方（要 diversity statement、只是 review 开始日期、同一职位也挂在别的网站等）。
   - 怎么处理：在 Decision 一列选 Add / Maybe / Pass，然后点表格顶部的 **▶ Update Tracker**（或跟 Claude 说"把 leads 加到追踪表"），Add 的就会进主表，推荐人分享表也会一起刷新。Excel 开着也没关系，会自动存盘、更新、重新打开。
   - 按钮的一次性设置（Mac）：打开"快捷指令"App，新建一个名字叫 `Update Tracker` 的快捷指令，加一个"运行 Shell 脚本"动作，内容是 `<python3 的完整路径> "$HOME/econ-job-market-kit/scripts/update_tracker.py"`（在终端里用 `which python3` 查路径）；在快捷指令的 设置 › 高级 里勾选"允许运行脚本"。想要快捷键的话，在快捷指令的 ⓘ 详细信息里"添加键盘快捷键"。

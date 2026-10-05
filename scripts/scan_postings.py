@@ -8,6 +8,8 @@
 Sources (all public, machine-readable):
   JOE: the AEA's XML export of current listings
   EJM: EconJobMarket's public JSON feed of ads
+  IMF: the IMF's Workday career site (public JSON API)
+  WB: the World Bank Group's Cornerstone career site (public search API; economics/research titles)
   CHE / IHE: Chronicle of Higher Education Jobs and Inside Higher Ed Careers (RSS search
   feeds, newest first; strong on teaching-focused and regional colleges). HigherEdJobs
   blocks automated access, so it is not scanned; most of its economics faculty ads are
@@ -36,6 +38,10 @@ JOE_LIST = "https://www.aeaweb.org/joe/listings"
 EJM_JSON = "https://backend.econjobmarket.org/data/zz_public/json/Ads"
 RSS_SITES = {"CHE": "https://jobs.chronicle.com/jobsrss/?PositionType=12",           # Economics category
              "IHE": "https://careers.insidehighered.com/jobsrss/?FacultyJobs=57"}  # Economics faculty
+IMF_JOBS = "https://imf.wd5.myworkdayjobs.com/wday/cxs/imf/IMF"        # Workday public job API
+WB_SITE = "https://worldbankgroup.csod.com/ux/ats/careersite/1/home?c=worldbankgroup"
+WB_SEARCH = "https://us.api.csod.com/rec-job-search/external/jobs"      # Cornerstone public search
+WB_TITLES = re.compile(r"econom|research|young professional|data scien|statistic", re.I)
 RSS_DAYS = 120      # ignore RSS ads posted longer ago than this (boards keep old pooled ads)
 RSS_PAGES = 20      # 20-25 ads per page
 
@@ -114,6 +120,63 @@ def ejm_postings():
     return out
 
 
+def post_json(url, body, headers=None):
+    req = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                 headers={**UA, "Content-Type": "application/json", **(headers or {})})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.loads(r.read().decode("utf-8", errors="ignore"))
+
+
+def imf_postings():
+    """All open IMF jobs (usually a few dozen) from its Workday career site."""
+    out, offset = [], 0
+    while True:
+        d = post_json(IMF_JOBS + "/jobs", {"appliedFacets": {}, "limit": 20, "offset": offset, "searchText": ""})
+        for j in d.get("jobPostings", []):
+            info = json.loads(fetch(IMF_JOBS + j["externalPath"])).get("jobPostingInfo", {})
+            m = re.search(r"(\d{2})/(\d{2})/(\d{4})", " ".join(j.get("bulletFields") or []) + " " +
+                          str(info.get("jobPostingEndDateAsText") or ""))
+            out.append({"source": "IMF", "id": "IMF-" + str(info.get("jobReqId") or j["externalPath"].split("_")[-1]),
+                        "url": "https://imf.wd5.myworkdayjobs.com/en-US/IMF" + j["externalPath"],
+                        "section": "Full-Time Nonacademic", "title": clean(j.get("title")), "employer": "IMF",
+                        "department": "", "location": clean(j.get("locationsText")),
+                        "deadline": f"{m.group(3)}-{m.group(1)}-{m.group(2)}" if m else "",
+                        "fields": [], "field_names": [], "text": clean(info.get("jobDescription"))})
+        offset += 20
+        if offset >= d.get("total", 0) or not d.get("jobPostings"):
+            break
+    return out
+
+
+def wb_postings():
+    """World Bank Group jobs (Cornerstone career site); keeps economics/research-type titles only."""
+    page = fetch(WB_SITE)
+    token = json.loads(re.search(r"csod\.context=(\{.*?\});", page, re.S).group(1))["token"]
+    out, n = [], 1
+    while True:
+        body = {"careerSiteId": 1, "careerSitePageId": 1, "pageNumber": n, "pageSize": 100, "cultureId": 1,
+                "searchText": "", "cultureName": "en-US", "states": [], "countryCodes": [], "cities": [],
+                "placeID": "", "radius": None, "postingsWithinDays": None, "customFieldCheckboxKeys": [],
+                "customFieldDropdowns": [], "customFieldRadios": []}
+        reqs = post_json(WB_SEARCH, body, {"Authorization": "Bearer " + token})["data"]["requisitions"]
+        for r in reqs:
+            if not WB_TITLES.search(r.get("displayJobTitle") or ""):
+                continue
+            loc = (r.get("locations") or [{}])[0] or {}
+            m = re.match(r"(\d+)/(\d+)/(\d{4})", r.get("postingExpirationDate") or "")
+            out.append({"source": "WB", "id": f"WB-{r['requisitionId']}",
+                        "url": f"https://worldbankgroup.csod.com/ux/ats/careersite/1/home/requisition/{r['requisitionId']}?c=worldbankgroup",
+                        "section": "Full-Time Nonacademic", "title": clean(r.get("displayJobTitle")),
+                        "employer": "World Bank Group", "department": "",
+                        "location": ", ".join(x for x in (loc.get("city"), loc.get("country")) if x),
+                        "deadline": f"{m.group(3)}-{int(m.group(1)):02d}-{int(m.group(2)):02d}" if m else "",
+                        "fields": [], "field_names": [], "text": clean(r.get("externalDescription"))})
+        if len(reqs) < 100:
+            break
+        n += 1
+    return out
+
+
 def rss_postings(src):
     """Ads in the Economics category of a Madgex job board's RSS feed. Full text is fetched
     later (rss_details) only for ads that pass the filter, to keep requests few."""
@@ -170,6 +233,8 @@ def keep(x, sc, today):
     if x["source"] == "JOE":
         if x["section"] not in sc["joe_sections"]:
             return False, "section"
+    elif x["source"] in ("IMF", "WB"):
+        pass        # institutions' own career sites; Claude judges fit
     elif x["source"] in RSS_SITES:
         pass        # Economics category of academic boards; fields judged later from full text
     else:
@@ -189,7 +254,7 @@ def keep(x, sc, today):
     generic = x["source"] in RSS_SITES and re.search(r"faculty|professor", x["title"], re.I)
     if not (JUNIOR.search(head) or generic) and "Assistant Professor" not in x["section"] and "Lecturer" not in x["section"]:
         return False, "rank"
-    if x["deadline"] and x["deadline"] < today and x["source"] == "JOE":
+    if x["deadline"] and x["deadline"] < today and x["source"] in ("JOE", "IMF", "WB"):
         return False, "deadline"
     if x["source"] in RSS_SITES:
         return True, ""
@@ -226,7 +291,8 @@ def main():
     today = dt.date.today().isoformat()
     posts, errors = [], []
     for name, fn in (("JOE", joe_postings), ("EJM", ejm_postings),
-                     ("CHE", lambda: rss_postings("CHE")), ("IHE", lambda: rss_postings("IHE"))):
+                     ("CHE", lambda: rss_postings("CHE")), ("IHE", lambda: rss_postings("IHE")),
+                     ("IMF", imf_postings), ("WB", wb_postings)):
         try:
             posts += fn()
         except Exception as e:  # keep going if one source is down
@@ -261,7 +327,7 @@ def main():
         ttl = " ".join([w for w in re.findall(r"[a-z]+", x["title"].lower()) if w not in ("of", "in", "and", "the")][:3])
         return emp + "|" + ttl
     merged = {}
-    order = {"JOE": 0, "EJM": 1, "CHE": 2, "IHE": 3}
+    order = {"JOE": 0, "EJM": 1, "IMF": 2, "WB": 3, "CHE": 4, "IHE": 5}
     for x in sorted(new, key=lambda x: order.get(x["source"], 9)):
         k = key(x)
         if k in merged:

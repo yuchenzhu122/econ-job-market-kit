@@ -1,6 +1,6 @@
 ---
 name: econ-job-scan
-description: Scan JOE, EconJobMarket, Chronicle Jobs and Inside Higher Ed Careers for new academic and policy economics postings, judge each against the user's CV and preferences, and add the promising ones to the Leads sheet of the job market tracker. Use when the user says "scan for jobs", "扫一下新职位", "run the job scan", when a scheduled job-scan task fires, or when the user says "add my leads to the tracker" / "把leads加到追踪表" (promote step only).
+description: Scan JOE, EconJobMarket, IMF, World Bank, Chronicle Jobs and Inside Higher Ed Careers for new academic and policy economics postings, judge each against the user's CV and preferences, and add the promising ones to the Leads sheet of the job market tracker. Use when the user says "scan for jobs", "扫一下新职位", "run the job scan", when a scheduled job-scan task fires, or when the user says "add my leads to the tracker" / "把leads加到追踪表" (promote step only).
 ---
 
 # Twice-weekly job scan
@@ -27,8 +27,8 @@ by hand. Use WebFetch only for High/Medium ads whose text is too short to judge.
 ## A. Scan (scheduled run or "scan for jobs")
 
 1. `python3 <repo>/scripts/scan_postings.py` (takes ~2 minutes). It fetches JOE's XML
-   export, EJM's JSON feed, and the Economics category RSS of Chronicle Jobs (source CHE) and
-   Inside Higher Ed Careers (IHE), applies the rule-based filter, skips postings already seen or already in the
+   export, EJM's JSON feed, the IMF and World Bank Group career sites (sources IMF, WB), and the
+   Economics category RSS of Chronicle Jobs (source CHE) and Inside Higher Ed Careers (IHE), applies the rule-based filter, skips postings already seen or already in the
    tracker, and writes `scan_new.json` (`candidates`: id, source, url, also_at, section,
    title, employer, department, location, deadline, field_names, summary, text, visa_text =
    every sentence of the ad about sponsorship, citizenship or work authorization). If every
