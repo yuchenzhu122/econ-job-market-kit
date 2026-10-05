@@ -40,9 +40,11 @@ RSS_DAYS = 120      # ignore RSS ads posted longer ago than this (boards keep ol
 RSS_PAGES = 20      # 20-25 ads per page
 
 JUNIOR = re.compile(r"assistant prof|lecturer|instructor|teaching|tenure[- ]track|open rank|economist|"
-                    r"research (?:associate|fellow|scientist)|policy|analyst|all ranks|any rank", re.I)
+                    r"researcher|research (?:associate|fellow|scientist)|fellow\b|scientist|official|"
+                    r"policy|analyst|all ranks|any rank|job market", re.I)
 EXCLUDE = re.compile(r"post-?doc|visiting|pre-?doc|research assistant|phd (?:student|position|fellowship)|"
-                     r"doctoral (?:student|fellowship)|adjunct|part-time|dean|chair\b|director|head of", re.I)
+                     r"doctoral (?:student|fellowship)|adjunct|part-time|dean|chair\b|director|head of|"
+                     r"intern(?:ship)?\b|summer|stagiaire|unsolicited|spontan", re.I)
 VISA = re.compile(r"[^.]*(?:sponsor|citizen|permanent resident|green card|work authori[sz]ation|"
                   r"authori[sz]ed to work|right to work|visa|security clearance)[^.]*\.", re.I)
 OTHER_FIELD = re.compile(r"financ|marketing|accounting|management|philosoph|real estate|business law|"
@@ -191,6 +193,8 @@ def keep(x, sc, today):
         return False, "deadline"
     if x["source"] in RSS_SITES:
         return True, ""
+    if "nonacademic" in x["section"].lower():
+        return True, ""     # policy jobs: field labels are broad; Claude judges fit from the full text
     text = (x["text"] + " " + " ".join(x["field_names"]) + " " + x["title"]).lower()
     field_ok = (any(f.startswith(tuple(sc["field_jel_prefixes"])) for f in x["fields"])
                 or any(c in sc["ejm_categories"] for c in x["field_names"])
