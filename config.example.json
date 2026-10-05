@@ -1,0 +1,29 @@
+{
+  "_comment": "Copy this file to config.json and fill in your own details. config.json is git-ignored.",
+
+  "name": "Your Name",
+  "email": "you@university.edu",
+  "website": "yourname.github.io",
+  "department": "Department of Economics, Your University",
+  "city": "City, ST 00000",
+  "season": "2026-27",
+  "accent_color": "0021A5",
+
+  "letter_writers": ["Writer One", "Writer Two", "Writer Three"],
+  "letter_writers_sentence": "Writer One (chair), Writer Two, and Writer Three",
+
+  "job_market_dir": "~/Job Market 2026-27",
+  "tracker_file": "08_Applications/Job_Market_Application_Tracker.xlsx",
+  "cover_letter_dir": "09_Cover_Letters/letters",
+
+  "standard_packet": ["cover letter", "CV", "job market paper", "research statement",
+                      "teaching statement", "teaching evaluations"],
+
+  "cover_letter": {
+    "intro": "I am writing to apply for the {position} position in the {dept} at {employer}. I am a Ph.D. candidate in Economics at Your University and expect to complete my degree in 2027. My research is in <your fields>.",
+    "jmp": "My job market paper, ``<Title>,'' asks <question>. Using <data>, I find <main result in one or two sentences>.",
+    "other_research": "My other work <one or two sentences on your other papers, with coauthors named>.",
+    "teaching": "I have taught <course> as the instructor of record since <term>, and I was a teaching assistant for <n> courses. <One concrete thing you do in class.> <One piece of evidence, e.g. an evaluation score with the department mean.> I am prepared to teach <courses>.",
+    "closing": "I have enclosed my CV, job market paper, research statement, and teaching statement. Letters of recommendation will be provided by {letter_writers}. Thank you for your time and consideration."
+  }
+}
