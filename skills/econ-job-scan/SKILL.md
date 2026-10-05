@@ -47,9 +47,12 @@ ranks first). Tracker = `<job_market_dir>/<tracker_file>`. Work files go next to
    **Work authorization** (compare with `profile.work_authorization`):
    - Skip if the ad requires citizenship or permanent residency the user lacks, says it will
      not sponsor visas ("unable to sponsor", "must be authorized to work without sponsorship"),
-     or requires a security clearance. US federal agencies (BLS, Census, Treasury, CBO, etc.)
-     usually require US citizenship: Skip unless the ad says otherwise. Federal Reserve Banks
-     and the Board, IMF, World Bank and most universities do hire non-citizens.
+     or requires a security clearance.
+   - US federal agencies (BLS, Census, BEA, Treasury, USDA ERS, CBO, etc.) usually hire only
+     citizens, but do not Skip them unless the ad itself excludes the user: rate Low and put
+     "联邦机构，通常要求公民身份" (or in English if the user writes English) first in flags, so
+     the user can check. Federal Reserve Banks and the Board, IMF, World Bank and most
+     universities do hire non-citizens.
    - Keep, with a flag, when the ad says sponsorship "may" be available or is limited to some
      visa types (flag the exact wording), or when it says nothing (flag "visa sponsorship not
      stated; ask HR"). A stated sponsorship offer is a plus: note it in `why`.
