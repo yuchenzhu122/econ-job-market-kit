@@ -13,10 +13,10 @@
     "Writer Three"
   ],
   "letter_writers_sentence": "Writer One (chair), Writer Two, and Writer Three",
-  "job_market_dir": "~/Job Market 2026-27",
+  "job_market_dir": "~/Dropbox/Job Market/Job Market 2026-27",
   "tracker_file": "08_Applications/Job_Market_Application_Tracker.xlsx",
   "cover_letter_dir": "09_Cover_Letters/letters",
-  "letter_share_file": "~/Dropbox/Letter Requests (shared)/Letter_Requests.xlsx",
+  "letter_share_file": "~/Dropbox/Job Market/Letter Requests (shared)/Letter_Requests.xlsx",
   "standard_packet": [
     "cover letter",
     "CV",
