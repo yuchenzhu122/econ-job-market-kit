@@ -2,7 +2,7 @@
 
   python3 scripts/export_letter_list.py
 
-Reads the Tracker sheet, keeps rows with Letters? = Yes, sorts them by deadline, and writes a
+Reads the Tracker sheet, keeps rows with Letters? = Yes (skipping Withdrawn/Rejected), sorts them by deadline, and writes a
 separate, read-only-style workbook to config["letter_share_file"] (e.g. a file in OneDrive or
 Google Drive). Share that file's link once with your letter writers; re-running this script
 overwrites the same file, so the link keeps working and always shows the latest list.
@@ -35,6 +35,8 @@ for r in range(5, ws.max_row + 1):
     get = lambda h: ws.cell(row=r, column=hdr[h]).value
     emp = get("Employer")
     if not emp or str(emp).startswith("EXAMPLE") or str(get("Letters?")).strip() != "Yes":
+        continue
+    if "Status" in hdr and str(get("Status")).strip() in ("Withdrawn", "Rejected"):
         continue
     d = get("Deadline")
     if isinstance(d, dt.datetime):
