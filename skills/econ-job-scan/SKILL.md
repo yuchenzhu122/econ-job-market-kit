@@ -6,8 +6,9 @@ description: Scan JOE, EconJobMarket, Chronicle Jobs and Inside Higher Ed Career
 # Twice-weekly job scan
 
 Find the repo with `readlink -f ~/.claude/skills/econ-job-scan` (go up two levels). Read
-`<repo>/config.json`: `profile` (fields, PhD date, summary, what the user wants) and `scan`
-(filters). Tracker = `<job_market_dir>/<tracker_file>`. Work files go next to the tracker:
+`<repo>/config.json`: `profile` (fields, PhD date, summary, what the user wants in order of
+priority, `work_authorization`) and `scan` (filters; `priority_types` = position types the user
+ranks first). Tracker = `<job_market_dir>/<tracker_file>`. Work files go next to the tracker:
 `scan_new.json`, `scan_eval.json`, `scan_state.json`.
 
 ## A. Scan (scheduled run or "scan for jobs")
@@ -16,20 +17,24 @@ Find the repo with `readlink -f ~/.claude/skills/econ-job-scan` (go up two level
    export, EJM's JSON feed, and the Economics category RSS of Chronicle Jobs (source CHE) and
    Inside Higher Ed Careers (IHE), applies the rule-based filter, skips postings already seen or already in the
    tracker, and writes `scan_new.json` (`candidates`: id, source, url, also_at, section,
-   title, employer, department, location, deadline, field_names, summary, text). If every
+   title, employer, department, location, deadline, field_names, summary, text, visa_text =
+   every sentence of the ad about sponsorship, citizenship or work authorization). If every
    source errored, stop and report the errors.
 2. **Triage every candidate** from title, section, department, field_names, deadline and
    `summary`. Assign:
    - **High**: rank and field clearly match `profile` (e.g. assistant professor or lecturer,
      open field or labor / education / public / applied micro / econometrics; or a policy
-     institution hiring in those areas), and the user is eligible.
+     institution hiring in those areas), and the user is eligible. Follow the priority order in
+     `wants`: when a `priority_types` job (e.g. teaching-focused) and another job match about
+     equally well, the priority one gets the higher rating.
    - **Medium**: plausible but uncertain (field not stated, mixed signals, very different
      country system, policy role with partly matching focus).
    - **Low**: a weak match (another field named as the priority, mainly theory/macro/finance)
      but not ruled out.
    - **Skip** (not written to Leads): ineligible or out of scope — senior or tenured only,
      requires years since PhD or a PhD already in hand earlier than `phd_expected`, postdoc
-     or visiting, industry or consulting firm (handled elsewhere), a field the ad restricts
+     or visiting, industry or consulting firm (handled elsewhere), a work-authorization rule
+     the user cannot meet (see Work authorization below), a field the ad restricts
      to that is far from the user's, deadline passed, or the posting is in a language/
      requirement the user cannot meet (state the reason in your own working notes only).
 3. **Read the full `text`** for every High and Medium candidate before finalizing. CHE/IHE
@@ -39,18 +44,29 @@ Find the repo with `readlink -f ~/.claude/skills/econ-job-scan` (go up two level
    Also: confirm
    eligibility (degree timing, years since PhD, citizenship or language requirements,
    teaching load), and note anything that changes the rating.
+   **Work authorization** (compare with `profile.work_authorization`):
+   - Skip if the ad requires citizenship or permanent residency the user lacks, says it will
+     not sponsor visas ("unable to sponsor", "must be authorized to work without sponsorship"),
+     or requires a security clearance. US federal agencies (BLS, Census, Treasury, CBO, etc.)
+     usually require US citizenship: Skip unless the ad says otherwise. Federal Reserve Banks
+     and the Board, IMF, World Bank and most universities do hire non-citizens.
+   - Keep, with a flag, when the ad says sponsorship "may" be available or is limited to some
+     visa types (flag the exact wording), or when it says nothing (flag "visa sponsorship not
+     stated; ask HR"). A stated sponsorship offer is a plus: note it in `why`.
+   - Use `visa_text` plus the full ad; quote the ad, never guess.
 4. Write `scan_eval.json`: a list of objects with `id, url, source, employer, position,
    track` (Academic or Government / Policy), `type` (Tenure-track, Teaching-focused,
    Fed / Central bank, Government, Think tank / Research, Other), `location, deadline,
    fit, why, flags, also_at`. `why` = one plain sentence tying the ad to the user's work
    (e.g. "Open field; applied micro group; teaches econometrics"). `flags` = concrete
-   cautions (required diversity statement, language, "Nov 21 is full-consideration date",
-   non-US system). Include High, Medium and Low; leave out Skip.
+   cautions (visa wording, required diversity statement, language, "Nov 21 is full-consideration
+   date", non-US system). Put the visa flag first. Include High, Medium and Low; leave out Skip.
 5. `python3 leads.py add <path to scan_eval.json>`. If the tracker is open in Excel and the
    save fails, report that and leave `scan_eval.json` in place so the next run (or "add the
    scan results") can retry.
 6. **Report** (in the user's language), short: how many fetched / new / High / Medium /
-   Low / skipped; the High ones as a list (employer, position, deadline, why); deadlines
+   Low / skipped (and how many skipped for work authorization); the High ones as a list
+   (employer, position, type, deadline, why, visa flag), teaching-focused first; deadlines
    within 14 days; any source errors. On a scheduled run, send this as the task's summary.
 
 ## B. Promote ("add my leads to the tracker")

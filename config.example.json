@@ -39,7 +39,8 @@
     ],
     "phd_expected": "2027",
     "summary": "<two or three sentences: your papers, methods, teaching>",
-    "wants": "<which kinds of positions you want and where; what to exclude>"
+    "wants": "<which kinds of positions you want, in order of priority, and where; what to exclude>",
+    "work_authorization": "<e.g. US citizen / needs H-1B sponsorship / EU citizen>"
   },
   "scan": {
     "joe_sections": [
@@ -83,6 +84,9 @@
       "Public Economics",
       "Computational Economics",
       "Other"
+    ],
+    "priority_types": [
+      "Teaching-focused"
     ]
   }
 }

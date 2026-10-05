@@ -41,6 +41,8 @@ JUNIOR = re.compile(r"assistant prof|lecturer|instructor|teaching|tenure[- ]trac
                     r"research (?:associate|fellow|scientist)|policy|analyst|all ranks|any rank", re.I)
 EXCLUDE = re.compile(r"post-?doc|visiting|pre-?doc|research assistant|phd (?:student|position|fellowship)|"
                      r"doctoral (?:student|fellowship)|adjunct|part-time|dean|chair\b|director|head of", re.I)
+VISA = re.compile(r"[^.]*(?:sponsor|citizen|permanent resident|green card|work authori[sz]ation|"
+                  r"authori[sz]ed to work|right to work|visa|security clearance)[^.]*\.", re.I)
 OTHER_FIELD = re.compile(r"financ|marketing|accounting|management|philosoph|real estate|business law|"
                          r"information systems|entrepreneur|supply chain|operations", re.I)
 
@@ -234,6 +236,8 @@ def main():
             if x["deadline"] and x["deadline"] < today:
                 ok, reason = False, "deadline"
         if ok:
+            # work-authorization sentences, kept even when the ad text is cut below
+            x["visa_text"] = " ".join(dict.fromkeys(m.strip() for m in VISA.findall(x["text"])))[:800]
             x["text"] = x["text"][:5000]
             x.pop("jid", None); x.pop("end", None)
             new.append(x)

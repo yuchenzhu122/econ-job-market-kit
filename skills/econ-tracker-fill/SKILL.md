@@ -38,9 +38,10 @@ writer, Notes. Dropdown values come from the `Lists` sheet; only write values li
    - Still Need: required materials NOT in `standard_packet` (e.g. diversity statement,
      a writing sample other than the JMP, transcripts, sample syllabus, teaching video).
    - Eligibility: if the ad excludes the user (e.g. requires years since PhD, a citizenship
-     or degree they lack) or its only deadline has passed, set Status = "Withdrawn", Cover
+     or degree they lack, or will not sponsor a visa the user needs per
+     `profile.work_authorization` in config.json) or its only deadline has passed, set Status = "Withdrawn", Cover
      Letter = "Not needed", and start Notes with "NOT ELIGIBLE:" or "DEADLINE PASSED:" plus the reason.
-   - Notes (append, never overwrite): fields sought, teaching load or courses, number of
+   - Notes (append, never overwrite): visa sponsorship wording (or "sponsorship not stated"), fields sought, teaching load or courses, number of
      letters, anything unusual, and "Filled from link <date>".
 4. **Write safely**: never overwrite a cell the user filled; only fill empty cells (Notes:
    append). If empty, set Status to "Not started" and Cover Letter to "To write"

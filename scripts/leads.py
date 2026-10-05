@@ -66,7 +66,8 @@ def add(cfg, path, items):
     ws = ensure_sheet(wb, cfg.get("accent_color", "0021A5"))
     have = {ws.cell(row=r, column=12).value for r in range(5, ws.max_row + 1)}
     items = [x for x in items if x.get("url") not in have]
-    items.sort(key=lambda x: (FIT_ORDER.get(x.get("fit"), 3), x.get("deadline") or "9999"))
+    first = cfg.get("scan", {}).get("priority_types", [])
+    items.sort(key=lambda x: (FIT_ORDER.get(x.get("fit"), 3), x.get("type") not in first, x.get("deadline") or "9999"))
     r = max(5, ws.max_row + 1)
     while r > 5 and ws.cell(row=r - 1, column=3).value in (None, ""):
         r -= 1
