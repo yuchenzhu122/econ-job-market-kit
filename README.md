@@ -19,7 +19,7 @@ matching PDFs; and give your letter writers a list that updates itself.
 | `scripts/update_tracker.py` | One step, no Claude needed: moves Leads marked Add into the Tracker (guessing Apply Via and Letters? from the ad) and refreshes the letter-writer file. If Excel has the tracker open, it asks Excel to save and close it, then reopens it. The first run also adds a clickable **▶ Update Tracker** link at the top of the Tracker and Leads sheets, which runs it through a macOS Shortcuts shortcut (see below). |
 | `scripts/md2pdf.py` | Converts a Markdown research or teaching statement into a PDF with the same letterhead. |
 | `skills/econ-tracker-fill` | Claude Code skill: reads the links in your tracker and fills employer, position, deadline, where to apply, whether letters are needed, and extra materials. |
-| `skills/econ-job-scan` | Claude Code skill: runs the scan, reads each new posting, rates fit (High / Medium / Low) against `profile` in config.json, and writes the Leads sheet. Schedule it (e.g. Mon and Thu mornings) as a Claude desktop scheduled task. |
+| `skills/econ-job-scan` | Claude Code skill: runs the scan, reads each new posting, rates fit (High / Medium / Low) against `profile` in config.json (ranking your `priority_types` first and checking visa / work-authorization rules), and writes the Leads sheet. Schedule it (e.g. Mon and Thu mornings) as a Claude desktop scheduled task. |
 | `skills/econ-cover-letter` | Claude Code skill: reads one posting, writes the fit paragraph, builds the letter, and marks it Drafted in the tracker. |
 
 ## Setup (about 10 minutes)
@@ -39,11 +39,12 @@ ln -s "$PWD/skills/econ-job-scan"      ~/.claude/skills/econ-job-scan
 ```
 
 In `config.json` set your name and contact details, your letter writers, the folder where
-your job market files live (`job_market_dir`), and the fixed cover-letter paragraphs.
+your job market files live (`job_market_dir`), the fixed cover-letter paragraphs, and your
+`profile` (fields, what you want, work authorization) for the job scan.
 
 ## Daily use
 
-0. Twice a week, **"scan for jobs"** (or a scheduled task) adds new matching postings to the **Leads** sheet. Mark the ones you want **Add**, then say **"add my leads to the tracker"**.
+0. Twice a week, **"scan for jobs"** (or a scheduled task) adds new matching postings to the **Leads** sheet. Mark the ones you want **Add**, then click **▶ Update Tracker** at the top of the sheet (or say **"add my leads to the tracker"**).
 1. Or paste posting links into the **Link** column of the tracker yourself.
 2. In Claude Code: **"fill the tracker"**. Claude reads each posting and fills the row
    without overwriting anything you typed.
@@ -75,8 +76,19 @@ How a run works:
 2. Claude reads the rest, rates each one High / Medium / Low against `profile` in
    `config.json`, reads the full ad for High and Medium (eligibility, deadline, extra
    materials), and writes them to the **Leads** sheet with a one-line Why and Flags.
-3. You set Decision = Add / Maybe / Pass. "add my leads to the tracker" moves the Add rows
-   into the Tracker.
+3. You set Decision = Add / Maybe / Pass, then click **▶ Update Tracker** (or say "add my
+   leads to the tracker") to move the Add rows into the Tracker.
+
+Preferences that shape the ratings, in `config.json`:
+
+- `profile.wants`: the kinds of positions you want, in order of priority.
+- `scan.priority_types`: position types listed first within each fit level (e.g.
+  `["Teaching-focused"]`).
+- `profile.work_authorization`: e.g. "needs H-1B sponsorship for US jobs". Ads that require
+  citizenship or permanent residency, or a security clearance, are skipped. Ads that say they
+  will not sponsor visas, and US federal agencies (which usually hire only citizens), are kept
+  as Low with a flag so you can check them. Ads that say nothing get the flag "visa
+  sponsorship not stated; ask HR".
 
 To run it on a schedule, create a Claude desktop scheduled task (e.g. Mondays and
 Thursdays at 8 am) whose prompt is "Run the econ-job-scan skill and summarize the result".
@@ -110,7 +122,9 @@ Statements: `python3 scripts/md2pdf.py research_statement.md "Research Statement
 
 - **自动找职位**：每周自动扫 JOE、EconJobMarket、Chronicle Jobs 和 Inside Higher Ed Careers（HigherEdJobs 禁止自动抓取，没有包含），按你的 CV 和偏好打分（High / Medium / Low），写进追踪表的 Leads 页；你选 Add 的会转进主表。
   - 结果在哪看：打开追踪表 Excel，第三个标签页 **Leads**。按 Fit 和截止日期排序，Why 写了为什么适合，Flags 写了要注意的地方（要 diversity statement、只是 review 开始日期、同一职位也挂在别的网站等）。
-  - 怎么处理：在 Decision 一列选 Add / Maybe / Pass，直接点表格顶部的 **▶ Update Tracker**（需要先在"快捷指令"里建一个名为 Update Tracker 的快捷指令，见上方英文说明）（或跟 Claude 说"把 leads 加到追踪表"），Add 的就会进主表，推荐人分享表也会一起刷新。
+  - 怎么处理：在 Decision 一列选 Add / Maybe / Pass，然后点表格顶部的 **▶ Update Tracker**（或跟 Claude 说"把 leads 加到追踪表"），Add 的就会进主表，推荐人分享表也会一起刷新。Excel 开着也没关系，会自动存盘、更新、重新打开。
+  - 按钮的一次性设置（Mac）：打开"快捷指令"App，新建一个名字叫 `Update Tracker` 的快捷指令，加一个"运行 Shell 脚本"动作，内容是 `<python3 的完整路径> "$HOME/econ-job-market-kit/scripts/update_tracker.py"`（在终端里用 `which python3` 查路径）；在快捷指令的 设置 › 高级 里勾选"允许运行脚本"。想要快捷键的话，在快捷指令的 ⓘ 详细信息里"添加键盘快捷键"。
+  - 偏好设置：`profile.wants` 写想投的岗位类型和优先顺序，`scan.priority_types` 决定同一档里哪类排前面（比如教学型），`profile.work_authorization` 写身份情况。要求公民/绿卡或 security clearance 的直接跳过；写明不 sponsor 签证的、美国联邦机构，评 Low 并在 Flags 里标出来；没写的标"未说明，需问 HR"。
   - 每次运行的简报在 Claude 桌面版左侧 **Scheduled** 里对应任务的运行记录中。
 - **给推荐人的分享文件**：只包含需要推荐信的职位，放在共享网盘里，链接分享一次就行，每次更新追踪表后自动刷新。
 - **追踪表**：把职位链接贴进 Link 一列，跟 Claude 说"补全追踪表"，它会读链接并填好学校、职位、截止日期、投递平台、是否要推荐信、额外材料。自带"给推荐人看"的页面，按截止日期自动排序。
