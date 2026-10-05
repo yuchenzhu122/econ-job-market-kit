@@ -11,17 +11,30 @@ priority, `work_authorization`) and `scan` (filters; `priority_types` = position
 ranks first). Tracker = `<job_market_dir>/<tracker_file>`. Work files go next to the tracker:
 `scan_new.json`, `scan_eval.json`, `scan_state.json`.
 
+## Commands (use only these, so runs need no extra approvals)
+
+Use the absolute path, without `cd` (S = `<repo>/scripts`):
+- `python3 S/scan_postings.py` (the scan)
+- `python3 S/scan_postings.py show <start> <count>` (compact list for triage, 40 at a time)
+- `python3 S/scan_postings.py text <n> [<n> ...]` (full ad text, location, deadline and visa
+  sentences for candidates by number)
+- `python3 S/leads.py add <scan_eval.json>`, `python3 S/leads.py promote`
+
+Write `scan_eval.json` with the Write tool. Do not write ad-hoc Python, `jq`, `sed` or
+heredoc commands to read or reshape the JSON files: each one needs the user to approve it
+by hand. Use WebFetch only for High/Medium ads whose text is too short to judge.
+
 ## A. Scan (scheduled run or "scan for jobs")
 
-1. `cd <repo>/scripts && python3 scan_postings.py` (takes ~2 minutes). It fetches JOE's XML
+1. `python3 <repo>/scripts/scan_postings.py` (takes ~2 minutes). It fetches JOE's XML
    export, EJM's JSON feed, and the Economics category RSS of Chronicle Jobs (source CHE) and
    Inside Higher Ed Careers (IHE), applies the rule-based filter, skips postings already seen or already in the
    tracker, and writes `scan_new.json` (`candidates`: id, source, url, also_at, section,
    title, employer, department, location, deadline, field_names, summary, text, visa_text =
    every sentence of the ad about sponsorship, citizenship or work authorization). If every
    source errored, stop and report the errors.
-2. **Triage every candidate** from title, section, department, field_names, deadline and
-   `summary`. Assign:
+2. **Triage every candidate** with `show` (page through all of them) from title, section,
+   field names, deadline, visa sentences and summary. Assign:
    - **High**: rank and field clearly match `profile` (e.g. assistant professor or lecturer,
      open field or labor / education / public / applied micro / econometrics; or a policy
      institution hiring in those areas), and the user is eligible. Follow the priority order in
@@ -37,7 +50,8 @@ ranks first). Tracker = `<job_market_dir>/<tracker_file>`. Work files go next to
      the user cannot meet (see Work authorization below), a field the ad restricts
      to that is far from the user's, deadline passed, or the posting is in a language/
      requirement the user cannot meet (state the reason in your own working notes only).
-3. **Read the full `text`** for every High and Medium candidate before finalizing. CHE/IHE
+3. **Read the full text** (`text <n> ...`, several numbers per call) for every High and Medium
+   candidate before finalizing. CHE/IHE
    ads often hold only a short teaser (text under ~400 characters) because the full ad is on
    the employer's site: open the `url` and follow its "Apply"/"Visit website" link to read it.
    CHE/IHE `deadline` is a best guess from the text (often the review date) or empty: confirm it.
@@ -67,7 +81,7 @@ ranks first). Tracker = `<job_market_dir>/<tracker_file>`. Work files go next to
    (e.g. "Open field; applied micro group; teaches econometrics"). `flags` = concrete
    cautions (visa wording, required diversity statement, language, "Nov 21 is full-consideration
    date", non-US system). Put the visa flag first. Include High, Medium and Low; leave out Skip.
-5. `python3 leads.py add <path to scan_eval.json>`. If the tracker is open in Excel and the
+5. `python3 <repo>/scripts/leads.py add <path to scan_eval.json>`. If the tracker is open in Excel and the
    save fails, report that and leave `scan_eval.json` in place so the next run (or "add the
    scan results") can retry.
 6. **Report** (in the user's language), short: how many fetched / new / High / Medium /
@@ -77,7 +91,7 @@ ranks first). Tracker = `<job_market_dir>/<tracker_file>`. Work files go next to
 
 ## B. Promote ("add my leads to the tracker")
 
-`python3 leads.py promote` copies Leads rows with Decision = Add into the Tracker (status
+`python3 <repo>/scripts/leads.py promote` copies Leads rows with Decision = Add into the Tracker (status
 Not started, cover letter To write) and marks them Added. Then run the econ-tracker-fill
 skill on the new rows to fill Apply Via, Letters?, Still Need and Notes from the links.
 

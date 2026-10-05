@@ -5,13 +5,15 @@
 
 evaluated.json is a list of objects with keys:
   id, url, source, employer, position, track, type, location, deadline (YYYY-MM-DD or ""),
-  fit (High | Medium | Low), why, flags, also_at (optional list of other links)
+  fit (High | Medium | Low), why, flags (string or list), also_at (optional list of other links)
+deadline may also be text like "Review begins 2026-10-30": the date is used and the text kept in Flags.
 
 Leads columns: Found, Fit, Employer, Position, Track, Type, Location, Deadline, Why, Flags,
 Source, Link, Decision (Add / Maybe / Pass; "Added" once promoted).
 """
 import datetime as dt
 import json
+import re
 import sys
 
 from openpyxl import load_workbook
@@ -74,12 +76,14 @@ def add(cfg, path, items):
     today = dt.date.today()
     for x in items:
         dl = None
-        if x.get("deadline"):
-            try:
-                dl = dt.date.fromisoformat(x["deadline"][:10])
-            except ValueError:
-                dl = None
         flags = x.get("flags") or ""
+        if isinstance(flags, list):
+            flags = "; ".join(str(f) for f in flags)
+        if x.get("deadline"):
+            m = re.search(r"\d{4}-\d{2}-\d{2}", str(x["deadline"]))
+            dl = dt.date.fromisoformat(m.group(0)) if m else None
+            if not m or m.group(0) != str(x["deadline"]).strip():   # e.g. "Review begins 2026-10-30"
+                flags = (flags + "; " if flags else "") + "deadline note: " + str(x["deadline"])
         if x.get("also_at"):
             flags = (flags + "; " if flags else "") + "also posted at " + ", ".join(x["also_at"])
         vals = [today, x.get("fit"), x.get("employer"), x.get("position"), x.get("track"), x.get("type"),

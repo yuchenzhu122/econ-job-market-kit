@@ -2,6 +2,8 @@
 
   python3 scripts/scan_postings.py            # writes <job_market_dir>/08_Applications/scan_new.json
   python3 scripts/scan_postings.py --all      # ignore the 'already seen' list (for testing)
+  python3 scripts/scan_postings.py show [start] [count]   # compact list of candidates for triage
+  python3 scripts/scan_postings.py text <n> [<n> ...]     # full text of candidates by number
 
 Sources (all public, machine-readable):
   JOE: the AEA's XML export of current listings
@@ -274,5 +276,38 @@ def main():
     print("filtered out:", stats, "| errors:", errors or "none")
 
 
+def view():
+    """Read scan_new.json in pieces, so Claude never needs ad-hoc scripts (each needs approval)."""
+    cfg = load_config()
+    path = os.path.join(jm_path(cfg, os.path.dirname(cfg["tracker_file"])), "scan_new.json")
+    data = json.load(open(path, encoding="utf-8"))
+    c = data["candidates"]
+    if sys.argv[1] == "show":
+        start = int(sys.argv[2]) if len(sys.argv) > 2 else 0
+        count = int(sys.argv[3]) if len(sys.argv) > 3 else 40
+        if start == 0:
+            print(f"scan date {data['date']} | {len(c)} candidates | errors: {data['errors'] or 'none'} "
+                  f"| filtered out: {data['filtered_out']}\n")
+        for n in range(start, min(start + count, len(c))):
+            x = c[n]
+            print(f"#{n} [{x['source']}] {x['employer']} | {x['title']} | {x['section']} | {x['location']} | "
+                  f"deadline {x['deadline'] or '?'} | fields: {', '.join(x['field_names'][:6]) or '-'}")
+            if x.get("visa_text"):
+                print(f"   VISA: {x['visa_text'][:300]}")
+            print(f"   {x['summary'][:500]}\n")
+        if start + count < len(c):
+            print(f"... next: show {start + count} {count}")
+    else:
+        for n in sys.argv[2:]:
+            x = c[int(n)]
+            print(f"#{n} [{x['source']}] {x['employer']} | {x['title']} | {x['url']}")
+            print(f"also at: {x.get('also_at') or '-'} | deadline {x['deadline'] or '?'} | {x['location']}")
+            print(f"VISA: {x.get('visa_text') or '(nothing in ad)'}")
+            print(x["text"] + "\n" + "-" * 60)
+
+
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] in ("show", "text"):
+        view()
+    else:
+        main()
