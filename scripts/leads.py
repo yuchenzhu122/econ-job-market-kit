@@ -35,7 +35,7 @@ def ensure_sheet(wb, accent):
     if "Leads" in wb.sheetnames:
         return wb["Leads"]
     ws = wb.create_sheet("Leads", 2)
-    ws["A1"] = "Leads · found automatically on JOE and EconJobMarket"
+    ws["A1"] = "Leads · found automatically on JOE, EconJobMarket, Chronicle and Inside Higher Ed"
     ws["A1"].font = Font(name=FONT, size=15, bold=True, color=accent)
     ws["A2"] = ("Pick a Decision for each row: Add = move it to the Tracker (ask Claude 'add my leads to the "
                 "tracker'), Maybe = keep, Pass = ignore. Fit is Claude's judgment against your CV; check the Why and Flags.")

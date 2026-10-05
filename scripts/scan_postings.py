@@ -1,11 +1,15 @@
-"""Pull new academic/policy postings from JOE and EconJobMarket and pre-filter them.
+"""Pull new academic/policy postings from JOE, EconJobMarket, Chronicle and Inside Higher Ed and pre-filter them.
 
   python3 scripts/scan_postings.py            # writes <job_market_dir>/08_Applications/scan_new.json
   python3 scripts/scan_postings.py --all      # ignore the 'already seen' list (for testing)
 
-Sources (both public, machine-readable):
+Sources (all public, machine-readable):
   JOE: the AEA's XML export of current listings
   EJM: EconJobMarket's public JSON feed of ads
+  CHE / IHE: Chronicle of Higher Education Jobs and Inside Higher Ed Careers (RSS search
+  feeds, newest first; strong on teaching-focused and regional colleges). HigherEdJobs
+  blocks automated access, so it is not scanned; most of its economics faculty ads are
+  cross-posted to one of these.
 
 Rule-based pre-filter (settings in config.json "scan"): section / position type, rank
 (drops senior-only and postdoc/visiting), field (JEL prefixes, categories, keywords),
@@ -24,14 +28,21 @@ from openpyxl import load_workbook
 
 from common import jm_path, load_config
 
-UA = {"User-Agent": "Mozilla/5.0 (econ-job-market-kit scanner)"}
+UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/129 Safari/537.36 (econ-job-market-kit scanner)"}
 JOE_LIST = "https://www.aeaweb.org/joe/listings"
 EJM_JSON = "https://backend.econjobmarket.org/data/zz_public/json/Ads"
+RSS_SITES = {"CHE": "https://jobs.chronicle.com/jobsrss/?PositionType=12",           # Economics category
+             "IHE": "https://careers.insidehighered.com/jobsrss/?FacultyJobs=57"}  # Economics faculty
+RSS_DAYS = 120      # ignore RSS ads posted longer ago than this (boards keep old pooled ads)
+RSS_PAGES = 20      # 20-25 ads per page
 
 JUNIOR = re.compile(r"assistant prof|lecturer|instructor|teaching|tenure[- ]track|open rank|economist|"
                     r"research (?:associate|fellow|scientist)|policy|analyst|all ranks|any rank", re.I)
 EXCLUDE = re.compile(r"post-?doc|visiting|pre-?doc|research assistant|phd (?:student|position|fellowship)|"
                      r"doctoral (?:student|fellowship)|adjunct|part-time|dean|chair\b|director|head of", re.I)
+OTHER_FIELD = re.compile(r"financ|marketing|accounting|management|philosoph|real estate|business law|"
+                         r"information systems|entrepreneur|supply chain|operations", re.I)
 
 
 def fetch(url):
@@ -93,11 +104,64 @@ def ejm_postings():
     return out
 
 
+def rss_postings(src):
+    """Ads in the Economics category of a Madgex job board's RSS feed. Full text is fetched
+    later (rss_details) only for ads that pass the filter, to keep requests few."""
+    import email.utils
+    out, seen = [], set()
+    cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=RSS_DAYS)
+    for page in range(1, RSS_PAGES + 1):
+        items = re.findall(r"<item>(.*?)</item>", fetch(f"{RSS_SITES[src]}&page={page}"), re.S)
+        if not items:
+            break
+        for it in items:
+            g = lambda t: html.unescape((re.search(rf"<{t}>(.*?)</{t}>", it, re.S) or [None, ""])[1]).strip()
+            link = g("link").split("?")[0]
+            m = re.search(r"/job/(\d+)/", link)
+            if not m or m.group(1) in seen:
+                continue
+            seen.add(m.group(1))
+            try:
+                if email.utils.parsedate_to_datetime(g("pubDate")) < cutoff:
+                    continue
+            except (TypeError, ValueError):
+                pass
+            emp, _, title = clean(g("title")).partition(": ")
+            if not title:
+                emp, title = "", emp
+            out.append({"source": src, "id": f"{src}-{m.group(1)}", "url": link, "section": "Academic",
+                        "title": title, "employer": emp, "department": "", "location": "", "deadline": "",
+                        "fields": [], "field_names": [], "text": clean(g("description"))})
+    return out
+
+
+def rss_details(x):
+    """Fill location and full text from the job page (Madgex layout)."""
+    page = fetch(x["url"])
+    dd = lambda k: clean((re.search(rf'<dt class="mds-list__key">{k}</dt>\s*<dd[^>]*>(.*?)</dd>', page, re.S)
+                          or [None, ""])[1])
+    x["location"] = dd("Location").replace(", United States", "")
+    x["employer"] = x["employer"] or dd("Employer")
+    body = re.search(r'<section class="mds-tabs__panel" id="job-description">(.*?)</section>', page, re.S)
+    if body:
+        x["text"] = clean(re.sub(r"<(script|style).*?</\1>", " ", body.group(1), flags=re.S))
+    m = re.search(r"(?:deadline|review of applications|applications will be reviewed|priority consideration)"
+                  r"[^.]{0,80}?((?:January|February|March|April|May|June|July|August|September|October|November|"
+                  r"December) \d{1,2},? 20\d\d)", x["text"], re.I)
+    if m:
+        try:
+            x["deadline"] = dt.datetime.strptime(m.group(1).replace(",", ""), "%B %d %Y").date().isoformat()
+        except ValueError:
+            pass
+
+
 def keep(x, sc, today):
     why = []
     if x["source"] == "JOE":
         if x["section"] not in sc["joe_sections"]:
             return False, "section"
+    elif x["source"] in RSS_SITES:
+        pass        # Economics category of academic boards; fields judged later from full text
     else:
         types = [t.strip() for t in x["section"].split(";")]
         if not any(t in sc["ejm_position_types"] for t in types):
@@ -107,10 +171,18 @@ def keep(x, sc, today):
     head = x["title"] + " " + x["section"]
     if EXCLUDE.search(x["title"]) and not re.search(r"assistant prof|lecturer", x["title"], re.I):
         return False, "rank"
-    if not JUNIOR.search(head) and "Assistant Professor" not in x["section"] and "Lecturer" not in x["section"]:
+    if re.search(r"adjunct|part\s*-?\s*time|\bPT\b", x["title"], re.I):
+        return False, "rank"
+    if (x["source"] in RSS_SITES and OTHER_FIELD.search(x["title"])
+            and not re.search(r"econ", x["title"], re.I)):
+        return False, "field"
+    generic = x["source"] in RSS_SITES and re.search(r"faculty|professor", x["title"], re.I)
+    if not (JUNIOR.search(head) or generic) and "Assistant Professor" not in x["section"] and "Lecturer" not in x["section"]:
         return False, "rank"
     if x["deadline"] and x["deadline"] < today and x["source"] == "JOE":
         return False, "deadline"
+    if x["source"] in RSS_SITES:
+        return True, ""
     text = (x["text"] + " " + " ".join(x["field_names"]) + " " + x["title"]).lower()
     field_ok = (any(f.startswith(tuple(sc["field_jel_prefixes"])) for f in x["fields"])
                 or any(c in sc["ejm_categories"] for c in x["field_names"])
@@ -141,7 +213,8 @@ def main():
 
     today = dt.date.today().isoformat()
     posts, errors = [], []
-    for name, fn in (("JOE", joe_postings), ("EJM", ejm_postings)):
+    for name, fn in (("JOE", joe_postings), ("EJM", ejm_postings),
+                     ("CHE", lambda: rss_postings("CHE")), ("IHE", lambda: rss_postings("IHE"))):
         try:
             posts += fn()
         except Exception as e:  # keep going if one source is down
@@ -153,6 +226,13 @@ def main():
             stats["seen"] = stats.get("seen", 0) + 1
             continue
         ok, reason = keep(x, sc, today)
+        if ok and x["source"] in RSS_SITES:
+            try:
+                rss_details(x)
+            except Exception as e:
+                errors.append(f"{x['source']} page {x['url']}: {e}")
+            if x["deadline"] and x["deadline"] < today:
+                ok, reason = False, "deadline"
         if ok:
             x["text"] = x["text"][:5000]
             x.pop("jid", None); x.pop("end", None)
@@ -160,13 +240,15 @@ def main():
         else:
             stats[reason] = stats.get(reason, 0) + 1
 
-    # the same job is often posted on both JOE and EJM: keep one, remember the other link
+    # the same job is often posted on several boards: keep one (JOE > EJM > CHE > IHE), remember the other link
     def key(x):
-        emp = re.sub(r"[^a-z]", "", x["employer"].lower().replace("university", "").replace("the", ""))[:20]
-        ttl = " ".join(re.findall(r"[a-z]+", x["title"].lower())[:3])
+        emp = re.sub(r"\(.*?\)", "", x["employer"].lower())
+        emp = re.sub(r"[^a-z]", "", emp.replace("university", "").replace("the", ""))[:20]
+        ttl = " ".join([w for w in re.findall(r"[a-z]+", x["title"].lower()) if w not in ("of", "in", "and", "the")][:3])
         return emp + "|" + ttl
     merged = {}
-    for x in new:
+    order = {"JOE": 0, "EJM": 1, "CHE": 2, "IHE": 3}
+    for x in sorted(new, key=lambda x: order.get(x["source"], 9)):
         k = key(x)
         if k in merged:
             merged[k].setdefault("also_at", []).append(x["url"])

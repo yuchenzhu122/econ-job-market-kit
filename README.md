@@ -14,7 +14,7 @@ matching PDFs; and give your letter writers a list that updates itself.
 | `scripts/build_tracker.py` | Builds an Excel tracker: one row per job, deadline countdown, academic / industry / government tracks, a **For Letter Writers** tab sorted by deadline, a summary tab, and the AEA key dates. |
 | `scripts/make_letter.py` | One-page cover letter in two variants (`research` or `teaching` first). Your fixed paragraphs live in `config.json`; only a short "fit" paragraph changes per school. |
 | `scripts/export_letter_list.py` | Writes a separate, view-only Excel file with only the positions that need letters (deadline, where to submit, link, each writer's status) to a shared Dropbox/OneDrive/Google Drive folder. Share its link once; re-running keeps the same file, so the link always shows the latest list. |
-| `scripts/scan_postings.py` | Pulls current postings from JOE (XML export) and EconJobMarket (public JSON feed), filters by rank, field, deadline and section, and skips ones already seen. |
+| `scripts/scan_postings.py` | Pulls current postings from JOE (XML export), EconJobMarket (public JSON feed), and the Economics category RSS of Chronicle Jobs and Inside Higher Ed Careers (good for teaching-focused and regional colleges; HigherEdJobs blocks automated access and is not scanned), filters by rank, field, deadline and section, and skips ones already seen. |
 | `scripts/leads.py` | Adds rated postings to a **Leads** sheet in the tracker, and moves the ones you mark Add into the Tracker. |
 | `scripts/md2pdf.py` | Converts a Markdown research or teaching statement into a PDF with the same letterhead. |
 | `skills/econ-tracker-fill` | Claude Code skill: reads the links in your tracker and fills employer, position, deadline, where to apply, whether letters are needed, and extra materials. |
@@ -64,7 +64,7 @@ Statements: `python3 scripts/md2pdf.py research_statement.md "Research Statement
 
 给经济学 job market 用的小工具包，配合 Claude Code 使用：
 
-- **自动找职位**：每周自动扫 JOE 和 EconJobMarket，按你的 CV 和偏好打分（High / Medium / Low），写进追踪表的 Leads 页；你选 Add 的会转进主表。
+- **自动找职位**：每周自动扫 JOE、EconJobMarket、Chronicle Jobs 和 Inside Higher Ed Careers（HigherEdJobs 禁止自动抓取，没有包含），按你的 CV 和偏好打分（High / Medium / Low），写进追踪表的 Leads 页；你选 Add 的会转进主表。
 - **给推荐人的分享文件**：只包含需要推荐信的职位，放在共享网盘里，链接分享一次就行，每次更新追踪表后自动刷新。
 - **追踪表**：把职位链接贴进 Link 一列，跟 Claude 说"补全追踪表"，它会读链接并填好学校、职位、截止日期、投递平台、是否要推荐信、额外材料。自带"给推荐人看"的页面，按截止日期自动排序。
 - **Cover letter**：说"给 XX 写 cover letter"，它会读职位、写一段"为什么适合这个学校"，生成一页 PDF（研究型 / 教学型两个版本），并在追踪表里标为 Drafted。
