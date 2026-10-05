@@ -130,6 +130,26 @@ def apply_via(url, text):
     return "Employer website"      # Chronicle / IHE ads send you to the employer's site
 
 
+def sync_added(lead, tr):
+    """Copy the Tracker's deadline back to Leads rows already moved there (matched by link),
+    so both sheets show the date the user set in the Tracker."""
+    H = {tr.cell(row=4, column=c).value: c for c in range(1, tr.max_column + 1) if tr.cell(row=4, column=c).value}
+    dl = {}
+    for r in range(5, tr.max_row + 1):
+        link = tr.cell(row=r, column=H["Link"]).value
+        if link:
+            dl[str(link).strip()] = tr.cell(row=r, column=H["Deadline"]).value
+    n = 0
+    for r in range(5, lead.max_row + 1):
+        link = lead.cell(row=r, column=12).value
+        if lead.cell(row=r, column=13).value == "Added" and link and str(link).strip() in dl:
+            new = dl[str(link).strip()]
+            if new and lead.cell(row=r, column=8).value != new:
+                lead.cell(row=r, column=8, value=new).number_format = "mmm d, yyyy"
+                n += 1
+    return n
+
+
 def promote(cfg, path):
     wb = load_workbook(path)
     if "Leads" not in wb.sheetnames:
@@ -168,9 +188,10 @@ def promote(cfg, path):
         lead.cell(row=r, column=13, value="Added")
         moved.append(g(3))
         nxt += 1
+    synced = sync_added(lead, tr)
     restore_dropdowns(wb, cfg["letter_writers"])
     wb.save(path)
-    print(f"promoted {len(moved)}: {moved}")
+    print(f"promoted {len(moved)}: {moved}; synced {synced} deadline(s) back to Leads")
     return moved
 
 
