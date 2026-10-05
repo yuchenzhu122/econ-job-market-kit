@@ -31,5 +31,58 @@
     "other_research": "My other work <one or two sentences on your other papers, with coauthors named>.",
     "teaching": "I have taught <course> as the instructor of record since <term>, and I was a teaching assistant for <n> courses. <One concrete thing you do in class.> <One piece of evidence, e.g. an evaluation score with the department mean.> I am prepared to teach <courses>.",
     "closing": "I have enclosed my CV, job market paper, research statement, and teaching statement. Letters of recommendation will be provided by {letter_writers}. Thank you for your time and consideration."
+  },
+  "profile": {
+    "fields": [
+      "<field 1>",
+      "<field 2>"
+    ],
+    "phd_expected": "2027",
+    "summary": "<two or three sentences: your papers, methods, teaching>",
+    "wants": "<which kinds of positions you want and where; what to exclude>"
+  },
+  "scan": {
+    "joe_sections": [
+      "US: Full-Time Academic (Permanent, Tenure Track or Tenured)",
+      "International: Full-Time Academic (Permanent, Tenure Track or Tenured)",
+      "Full-Time Nonacademic"
+    ],
+    "ejm_position_types": [
+      "Assistant Professor",
+      "Lecturer",
+      "Senior Lecturer",
+      "Untenured Professor",
+      "Other academic",
+      "Other nonacademic"
+    ],
+    "field_jel_prefixes": [
+      "A",
+      "C",
+      "H",
+      "I",
+      "J"
+    ],
+    "field_keywords": [
+      "any field",
+      "all fields",
+      "open field",
+      "applied micro",
+      "labor",
+      "education",
+      "public economics",
+      "econometric",
+      "data science",
+      "machine learning"
+    ],
+    "ejm_categories": [
+      "Any field",
+      "Applied microeconomics",
+      "Labor; Demographic Economics",
+      "Econometrics",
+      "Health; Education; Welfare",
+      "Public Economics",
+      "Computational Economics",
+      "Other"
+    ]
   }
 }
