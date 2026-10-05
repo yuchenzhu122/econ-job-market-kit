@@ -80,7 +80,8 @@ by hand. Use WebFetch only for High/Medium ads whose text is too short to judge.
    fit, why, flags, also_at`. `why` = one plain sentence tying the ad to the user's work
    (e.g. "Open field; applied micro group; teaches econometrics"). `flags` = concrete
    cautions (visa wording, required diversity statement, language, "Nov 21 is full-consideration
-   date", non-US system). Put the visa flag first. Include High, Medium and Low; leave out Skip.
+   date", non-US system). Put the visa flag first. Write dates, never relative time ("Deadline
+   Oct 9", not "deadline is in 4 days"): the Leads sheet is read days later. Include High, Medium and Low; leave out Skip.
 5. `python3 <repo>/scripts/leads.py add <path to scan_eval.json>`. If the tracker is open in Excel and the
    save fails, report that and leave `scan_eval.json` in place so the next run (or "add the
    scan results") can retry.
