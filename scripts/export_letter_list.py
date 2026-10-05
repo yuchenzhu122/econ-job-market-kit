@@ -62,7 +62,9 @@ sh["A1"].font = Font(name=FONT, size=15, bold=True, color=accent)
 sh["A2"] = (f"Positions that need a letter, soonest deadline first. Last updated "
             f"{dt.date.today().strftime('%B %-d, %Y')}. Thank you for your support!")
 sh["A2"].font = Font(name=FONT, size=10, italic=True, color="555555")
-cols = [("#", 5), ("Deadline", 13), ("Days Left", 9), ("Employer", 30), ("Position", 32),
+# no formulas: the file is mostly viewed in a browser preview (Dropbox/OneDrive), which does not
+# recalculate them, so a "Days Left" formula would show up blank
+cols = [("#", 5), ("Deadline", 13), ("Employer", 30), ("Position", 32),
         ("Submit Letter Via", 20), ("Link", 30)] + [(w, 13) for w in writers]
 for i, (h, w) in enumerate(cols, start=1):
     c = sh.cell(row=4, column=i, value=h)
@@ -70,28 +72,24 @@ for i, (h, w) in enumerate(cols, start=1):
     sh.column_dimensions[L(i)].width = w
 for k, x in enumerate(rows, start=1):
     r = 4 + k
-    vals = [k, x["Deadline"], None, x["Employer"], x["Position"], x["Apply Via"], x["Link"]] + [x[w] for w in writers]
+    vals = [k, x["Deadline"], x["Employer"], x["Position"], x["Apply Via"], x["Link"]] + [x[w] for w in writers]
     for i, v in enumerate(vals, start=1):
         c = sh.cell(row=r, column=i, value=v)
         c.font = fb; c.border = bd
-        c.alignment = ctr if i in (1, 2, 3) or i > 7 else wrap
+        c.alignment = ctr if i in (1, 2) or i > 6 else wrap
     sh.cell(row=r, column=2).number_format = "mmm d, yyyy"
-    sh.cell(row=r, column=3, value=f'=IF(B{r}="","",B{r}-TODAY())').number_format = '0;"past";"today"'
     if x["Link"]:
-        sh.cell(row=r, column=7).hyperlink = x["Link"]
-        sh.cell(row=r, column=7).font = Font(name=FONT, size=10, color="0563C1", underline="single")
+        sh.cell(row=r, column=6).hyperlink = x["Link"]
+        sh.cell(row=r, column=6).font = Font(name=FONT, size=10, color="0563C1", underline="single")
 if not rows:
     sh["A5"] = "No positions need letters yet."
     sh["A5"].font = fb
 last = 4 + max(len(rows), 1)
-w1, w2 = L(8), L(7 + len(writers))
+w1, w2 = L(7), L(6 + len(writers))
 sh.conditional_formatting.add(f"{w1}5:{w2}{last}", FormulaRule(
     formula=[f'{w1}5="Uploaded"'], fill=PatternFill("solid", fgColor="C6EFCE"), font=Font(name=FONT, color="006100")))
 sh.conditional_formatting.add(f"{w1}5:{w2}{last}", FormulaRule(
     formula=[f'{w1}5="Requested"'], fill=PatternFill("solid", fgColor="FFEB9C"), font=Font(name=FONT, color="9C5700")))
-sh.conditional_formatting.add(f"C5:C{last}", FormulaRule(
-    formula=["AND(ISNUMBER($C5),$C5<=7)"], fill=PatternFill("solid", fgColor="F8CBAD"),
-    font=Font(name=FONT, color="9C0006", bold=True)))
 sh.freeze_panes = "A5"
 sh.sheet_view.showGridLines = False
 sh.protection.sheet = True          # view-only by default; no password, so you can still unprotect locally
