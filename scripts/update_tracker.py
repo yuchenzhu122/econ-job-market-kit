@@ -33,29 +33,38 @@ def excel_running():
     return subprocess.run(["pgrep", "-x", "Microsoft Excel"], capture_output=True).returncode == 0
 
 
+def open_in_excel(name):
+    if not excel_running():
+        return False
+    r = subprocess.run(["osascript", "-e", 'tell application "Microsoft Excel" to get name of workbooks'],
+                       capture_output=True, text=True)
+    return name in r.stdout
+
+
 def close_in_excel(path):
-    """Save and close the workbook in Excel if it is open there. Returns True if it was open."""
-    lock = lock_path(path)
-    if not os.path.exists(lock):
-        return False
-    if not excel_running():                  # stale lock left by a crash or quit
-        os.remove(lock)
-        return False
+    """Save and close the workbook in Excel if it is open there. Returns True if it was open.
+    Asks Excel directly; the ~$ lock file is unreliable (Excel leaves stale ones behind)."""
     name = os.path.basename(path)
-    script = (f'tell application "Microsoft Excel"\n'
-              f'  if (exists workbook "{name}") then close workbook "{name}" saving yes\n'
-              f'end tell')
-    r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-    if r.returncode != 0:
-        raise SystemExit("Could not ask Excel to save and close the tracker "
-                         f"({r.stderr.strip()}). Save and close it yourself, then run this again.")
-    for _ in range(40):
-        if not os.path.exists(lock):
-            break
-        time.sleep(0.25)
-    if os.path.exists(lock) and excel_running():
-        raise SystemExit("Excel still has the tracker open. Save and close it, then run this again.")
-    return True
+    was_open = open_in_excel(name)
+    if was_open:
+        script = f'tell application "Microsoft Excel" to close workbook "{name}" saving yes'
+        r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+        if r.returncode != 0:
+            raise SystemExit("Could not ask Excel to save and close the tracker "
+                             f"({r.stderr.strip()}). Save and close it yourself, then run this again.")
+        for _ in range(40):
+            if not open_in_excel(name):
+                break
+            time.sleep(0.25)
+        else:
+            raise SystemExit("Excel still has the tracker open. Save and close it, then run this again.")
+    lock = lock_path(path)
+    if os.path.exists(lock):
+        try:
+            os.remove(lock)          # stale once the workbook is closed
+        except OSError:
+            pass
+    return was_open
 
 
 def add_buttons(path, command_file):
