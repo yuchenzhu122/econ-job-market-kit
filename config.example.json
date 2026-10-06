@@ -89,5 +89,13 @@
       "Teaching-focused"
     ]
   },
-  "letter_share_hide": []
+  "letter_share_hide": [],
+  "mail": {
+    "account": "<Mail.app account name, e.g. Exchange>",
+    "mailbox": "Inbox",
+    "days": 7,
+    "skip_senders": [
+      "@your-university.edu"
+    ]
+  }
 }

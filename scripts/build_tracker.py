@@ -74,6 +74,7 @@ cols = [  # header, width, kind, note
     ("Deadline", 12, "date", None),
     ("Days Left", 9, "auto", "Automatic. Red = 7 days or less. Disappears once Status is Submitted."),
     ("Status", 13, "in", None),
+    ("Submitted", 12, "date", "Date you submitted. Filled automatically from confirmation emails (mail_scan.py)."),
     ("Still Need", 26, "in", "Type what's missing, e.g. 'cover letter, teaching evals'. Leave blank when everything is ready."),
     ("Cover Letter", 11, "in", "To write / Drafted / Final / Not needed. Ask Claude: 'write the cover letter for <Employer>' and it updates this cell. Files are in 09_Cover_Letters."),
     ("Letters?", 9, "in", "Yes = this job needs recommendation letters (it will show up on the letter-writer tab)."),

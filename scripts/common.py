@@ -76,3 +76,71 @@ def restore_dropdowns(wb, writers):
         v = DataValidation(type="list", formula1=f"=Lists!${col}$4:${col}$30", allow_blank=True)
         tr.add_data_validation(v)
         v.add(rng)
+
+
+def excel_open_names():
+    import subprocess
+    if subprocess.run(["pgrep", "-x", "Microsoft Excel"], capture_output=True).returncode != 0:
+        return ""
+    r = subprocess.run(["osascript", "-e", 'tell application "Microsoft Excel" to get name of workbooks'],
+                       capture_output=True, text=True)
+    return r.stdout
+
+
+def close_in_excel(path):
+    """If Excel has the workbook open, save and close it. Returns True if it was open (reopen later
+    with reopen_in_excel). Asks Excel directly; the ~$ lock file is unreliable."""
+    import subprocess, time
+    name = os.path.basename(path)
+    was_open = name in excel_open_names()
+    if was_open:
+        r = subprocess.run(["osascript", "-e", f'tell application "Microsoft Excel" to close workbook "{name}" saving yes'],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            raise SystemExit(f"Could not ask Excel to save and close the tracker ({r.stderr.strip()}). "
+                             "Save and close it yourself, then run this again.")
+        for _ in range(40):
+            if name not in excel_open_names():
+                break
+            time.sleep(0.25)
+        else:
+            raise SystemExit("Excel still has the tracker open. Save and close it, then run this again.")
+    lock = os.path.join(os.path.dirname(path), "~$" + name)
+    if os.path.exists(lock):
+        try:
+            os.remove(lock)
+        except OSError:
+            pass
+    return was_open
+
+
+def reopen_in_excel(path, was_open):
+    import subprocess
+    if was_open:
+        subprocess.run(["open", path])
+
+
+def tracker_headers(ws):
+    return {ws.cell(row=4, column=c).value: c for c in range(1, ws.max_column + 1) if ws.cell(row=4, column=c).value}
+
+
+def ensure_submitted_column(ws):
+    """Add a 'Submitted' date column at the right edge of an older Tracker sheet. Returns its index."""
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter as L
+    H = tracker_headers(ws)
+    if "Submitted" in H:
+        return H["Submitted"]
+    col = max(H.values()) + 1
+    src = ws.cell(row=4, column=H["Deadline"])
+    c = ws.cell(row=4, column=col, value="Submitted")
+    c.font = Font(name=src.font.name, size=src.font.sz, bold=True, color=src.font.color.rgb if src.font.color else None)
+    c.fill = PatternFill("solid", fgColor=src.fill.fgColor.rgb)
+    c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.column_dimensions[L(col)].width = 12
+    for name in ("_sort", "_order"):
+        if name in H:
+            ws.column_dimensions[L(H[name])].hidden = True
+    for r in range(5, 155):
+        ws.cell(row=r, column=col).number_format = "mmm d, yyyy"
+    return col

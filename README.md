@@ -17,9 +17,11 @@ matching PDFs; and give your letter writers a list that updates itself.
 | `scripts/scan_postings.py` | Pulls current postings from JOE (XML export), EconJobMarket (public JSON feed), the IMF and World Bank career sites, and the Economics category RSS of Chronicle Jobs and Inside Higher Ed Careers (good for teaching-focused and regional colleges; HigherEdJobs blocks automated access and is not scanned), filters by rank, field, deadline and section, and skips ones already seen. |
 | `scripts/leads.py` | Adds rated postings to a **Leads** sheet in the tracker, and moves the ones you mark Add into the Tracker. |
 | `scripts/update_tracker.py` | One step, no Claude needed: moves Leads marked Add into the Tracker (guessing Apply Via and Letters? from the ad) and refreshes the letter-writer file. If Excel has the tracker open, it asks Excel to save and close it, then reopens it. The first run also adds a clickable **▶ Update Tracker** link at the top of the Tracker and Leads sheets, which runs it through a macOS Shortcuts shortcut (see below). |
+| `scripts/mail_scan.py` | Reads recent mail through the Mail app already signed in on your Mac (no passwords), opens only emails that look like application-system or letter notifications (never senders in `mail.skip_senders`, e.g. your own university), and lets Claude record the Submitted date and each writer's Uploaded status in the tracker. |
 | `scripts/md2pdf.py` | Converts a Markdown research or teaching statement into a PDF with the same letterhead. |
 | `skills/econ-tracker-fill` | Claude Code skill: reads the links in your tracker and fills employer, position, deadline, where to apply, whether letters are needed, and extra materials. |
 | `skills/econ-job-scan` | Claude Code skill: runs the scan, reads each new posting, rates fit (High / Medium / Low) against `profile` in config.json (ranking your `priority_types` first and checking visa / work-authorization rules), and writes the Leads sheet. Schedule it (e.g. Mon and Thu mornings) as a Claude desktop scheduled task. |
+| `skills/econ-mail-check` | Claude Code skill: runs the mail scan, matches confirmations and letter notifications to tracker rows, updates them, and refreshes the letter writers' list (which shows the date you applied). Schedule it daily. |
 | `skills/econ-cover-letter` | Claude Code skill: reads one posting, writes the fit paragraph, builds the letter, and marks it Drafted in the tracker. |
 
 ## Setup (about 10 minutes)
@@ -36,6 +38,7 @@ mkdir -p ~/.claude/skills
 ln -s "$PWD/skills/econ-tracker-fill"  ~/.claude/skills/econ-tracker-fill
 ln -s "$PWD/skills/econ-cover-letter"  ~/.claude/skills/econ-cover-letter
 ln -s "$PWD/skills/econ-job-scan"      ~/.claude/skills/econ-job-scan
+ln -s "$PWD/skills/econ-mail-check"    ~/.claude/skills/econ-mail-check
 ```
 
 In `config.json` set your name and contact details, your letter writers, the folder where
@@ -128,6 +131,7 @@ Statements: `python3 scripts/md2pdf.py research_statement.md "Research Statement
   - 按钮的一次性设置（Mac）：打开"快捷指令"App，新建一个名字叫 `Update Tracker` 的快捷指令，加一个"运行 Shell 脚本"动作，内容是 `<python3 的完整路径> "$HOME/econ-job-market-kit/scripts/update_tracker.py"`（在终端里用 `which python3` 查路径）；在快捷指令的 设置 › 高级 里勾选"允许运行脚本"。想要快捷键的话，在快捷指令的 ⓘ 详细信息里"添加键盘快捷键"。
   - 偏好设置：`profile.wants` 写想投的岗位类型和优先顺序，`scan.priority_types` 决定同一档里哪类排前面（比如教学型），`profile.work_authorization` 写身份情况。要求公民/绿卡或 security clearance 的直接跳过；写明不 sponsor 签证的、美国联邦机构，评 Low 并在 Flags 里标出来；没写的标"未说明，需问 HR"。
   - 每次运行的简报在 Claude 桌面版左侧 **Scheduled** 里对应任务的运行记录中。
+- **自动记录提交**：每天读一遍 Mac "邮件" App 里的邮件（不需要密码；本校邮箱发来的邮件不会打开），看到申请确认就在追踪表填上提交日期、状态改成 Submitted，看到推荐信已收到的通知就把对应老师标成 Uploaded；给老师的分享表会显示你哪天交的。
 - **给推荐人的分享文件**：只包含需要推荐信的职位，放在共享网盘里，链接分享一次就行，每次更新追踪表后自动刷新。
 - **追踪表**：把职位链接贴进 Link 一列，跟 Claude 说"补全追踪表"，它会读链接并填好学校、职位、截止日期、投递平台、是否要推荐信、额外材料。自带"给推荐人看"的页面，按截止日期自动排序。
 - **Cover letter**：说"给 XX 写 cover letter"，它会读职位、写一段"为什么适合这个学校"，生成一页 PDF（研究型 / 教学型两个版本），并在追踪表里标为 Drafted。
