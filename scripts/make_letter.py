@@ -4,8 +4,9 @@
       --position "Assistant Professor of Economics" --variant research \
       --fit "Two to four sentences on why this department."
 
---variant research   research first (research universities, policy schools)
---variant teaching   teaching first (liberal arts colleges, teaching-focused jobs)
+--variant research   research first, one page (research universities, policy schools)
+--variant teaching   teaching first, up to two pages (liberal arts colleges, teaching-focused jobs)
+See skills/econ-cover-letter/templates.md for what each paragraph does.
 
 Shared paragraphs come from config.json ("cover_letter"); only --fit is new per letter.
 Without --fit, a highlighted placeholder is inserted. Output: <job_market_dir>/<cover_letter_dir>/CL_<Employer>.pdf
@@ -19,7 +20,7 @@ from common import jm_path, letterhead, load_config, run_pdflatex, tex_escape
 
 ORDER = {
     "research": ["intro", "jmp", "other_research", "teaching", "fit", "closing"],
-    "teaching": ["intro", "teaching", "jmp", "other_research", "fit", "closing"],
+    "teaching": ["intro_teaching", "teaching_approach", "teaching_evidence", "research_brief", "fit", "closing_teaching"],
 }
 
 
@@ -37,8 +38,11 @@ def main():
     fill = {"employer": tex_escape(a.employer), "dept": tex_escape(a.dept), "position": tex_escape(a.position),
             "letter_writers": cfg["letter_writers_sentence"]}
     fit = tex_escape(a.fit) if a.fit.strip() else (
-        r"\colorbox{yellow}{[FIT PARAGRAPH: 2--4 sentences on why this department --- fields, centers, courses.]}")
+        r"\colorbox{yellow}{[FIT PARAGRAPH: see templates.md --- courses, students, load, why this school.]}")
     paras = cfg["cover_letter"]
+    missing = [k for k in ORDER[a.variant] if k != "fit" and k not in paras]
+    if missing:
+        raise SystemExit(f"config.json cover_letter is missing {missing} (needed for --variant {a.variant})")
     body = [fit if k == "fit" else paras[k].format(**fill) for k in ORDER[a.variant]]
     recipient = "Search Committee\\\\\n" + fill["dept"] + "\\\\\n" + fill["employer"]
     if a.address:

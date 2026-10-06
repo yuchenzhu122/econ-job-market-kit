@@ -30,7 +30,12 @@
     "jmp": "My job market paper, ``<Title>,'' asks <question>. Using <data>, I find <main result in one or two sentences>.",
     "other_research": "My other work <one or two sentences on your other papers, with coauthors named>.",
     "teaching": "I have taught <course> as the instructor of record since <term>, and I was a teaching assistant for <n> courses. <One concrete thing you do in class.> <One piece of evidence, e.g. an evaluation score with the department mean.> I am prepared to teach <courses>.",
-    "closing": "I have enclosed my CV, job market paper, research statement, and teaching statement. Letters of recommendation will be provided by {letter_writers}. Thank you for your time and consideration."
+    "closing": "I have enclosed my CV, job market paper, research statement, and teaching statement. Letters of recommendation will be provided by {letter_writers}. Thank you for your time and consideration.",
+    "intro_teaching": "<intro teaching: from your teaching statement / CV; teaching-focused letters only>",
+    "teaching_approach": "<teaching approach: from your teaching statement / CV; teaching-focused letters only>",
+    "teaching_evidence": "<teaching evidence: from your teaching statement / CV; teaching-focused letters only>",
+    "research_brief": "<research brief: from your teaching statement / CV; teaching-focused letters only>",
+    "closing_teaching": "<closing teaching: from your teaching statement / CV; teaching-focused letters only>"
   },
   "profile": {
     "fields": [
