@@ -153,7 +153,8 @@ def sync_added(lead, tr):
 def promote(cfg, path):
     wb = load_workbook(path)
     if "Leads" not in wb.sheetnames:
-        raise SystemExit("No Leads sheet yet.")
+        print("No Leads sheet yet; nothing to promote.")
+        return []
     lead, tr = wb["Leads"], wb["Tracker"]
     H = {tr.cell(row=4, column=c).value: c for c in range(1, tr.max_column + 1) if tr.cell(row=4, column=c).value}
     nxt = 5
