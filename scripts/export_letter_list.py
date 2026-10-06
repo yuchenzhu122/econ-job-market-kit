@@ -93,6 +93,13 @@ sh.conditional_formatting.add(f"{w1}5:{w2}{last}", FormulaRule(
 sh.freeze_panes = "A5"
 sh.sheet_view.showGridLines = False
 sh.protection.sheet = True          # view-only by default; no password, so you can still unprotect locally
+# ...but still let viewers hide/resize columns and rows, sort and filter (False = allowed)
+for opt in ("formatColumns", "formatRows", "sort", "autoFilter"):
+    setattr(sh.protection, opt, False)
+# columns to hide on every export (headers, e.g. ["Submit Letter Via"]); set in config.json
+for i, (h, _) in enumerate(cols, start=1):
+    if h in cfg.get("letter_share_hide", []):
+        sh.column_dimensions[L(i)].hidden = True
 os.makedirs(os.path.dirname(dst), exist_ok=True)
 wb.save(dst)
 print(f"{len(rows)} position(s) -> {dst}")
