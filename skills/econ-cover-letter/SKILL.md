@@ -1,6 +1,6 @@
 ---
 name: econ-cover-letter
-description: Draft a tailored one-page academic cover letter for an economics job market candidate and update their application tracker. Use when the user says "write the cover letter for <employer>", "cover letter for row N", "给XX写cover letter", or asks to draft or redo a cover letter for an academic or policy position in their tracker. Not for industry résumés.
+description: Draft a tailored academic cover letter (one page for research jobs, up to two for teaching-focused jobs) for an economics job market candidate and update their application tracker. Use when the user says "write the cover letter for <employer>", "cover letter for row N", "给XX写cover letter", or asks to draft or redo a cover letter for an academic or policy position in their tracker. Not for industry résumés.
 ---
 
 # Academic cover letter for one position
