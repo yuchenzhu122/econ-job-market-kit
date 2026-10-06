@@ -22,6 +22,9 @@ cfg = load_config()
 src = jm_path(cfg, cfg["tracker_file"])
 dst = os.path.expanduser(cfg["letter_share_file"])
 writers = cfg["letter_writers"]
+# per-writer status (Requested / Uploaded) is private by default: it stays in your tracker and is
+# not copied to the shared file; set "letter_share_show_status": true in config.json to share it
+show = writers if cfg.get("letter_share_show_status", False) else []
 
 ws = load_workbook(src, data_only=False)["Tracker"]
 hdr = {ws.cell(row=4, column=c).value: c for c in range(1, ws.max_column + 1) if ws.cell(row=4, column=c).value}
@@ -65,14 +68,14 @@ sh["A2"].font = Font(name=FONT, size=10, italic=True, color="555555")
 # no formulas: the file is mostly viewed in a browser preview (Dropbox/OneDrive), which does not
 # recalculate them, so a "Days Left" formula would show up blank
 cols = [("#", 5), ("Deadline", 13), ("Employer", 30), ("Position", 32),
-        ("Submit Letter Via", 20), ("Link", 30)] + [(w, 13) for w in writers]
+        ("Submit Letter Via", 20), ("Link", 30)] + [(w, 13) for w in show]
 for i, (h, w) in enumerate(cols, start=1):
     c = sh.cell(row=4, column=i, value=h)
     c.font = fh; c.fill = PatternFill("solid", fgColor=accent); c.alignment = ctr; c.border = bd
     sh.column_dimensions[L(i)].width = w
 for k, x in enumerate(rows, start=1):
     r = 4 + k
-    vals = [k, x["Deadline"], x["Employer"], x["Position"], x["Apply Via"], x["Link"]] + [x[w] for w in writers]
+    vals = [k, x["Deadline"], x["Employer"], x["Position"], x["Apply Via"], x["Link"]] + [x[w] for w in show]
     for i, v in enumerate(vals, start=1):
         c = sh.cell(row=r, column=i, value=v)
         c.font = fb; c.border = bd
@@ -85,11 +88,12 @@ if not rows:
     sh["A5"] = "No positions need letters yet."
     sh["A5"].font = fb
 last = 4 + max(len(rows), 1)
-w1, w2 = L(7), L(6 + len(writers))
-sh.conditional_formatting.add(f"{w1}5:{w2}{last}", FormulaRule(
-    formula=[f'{w1}5="Uploaded"'], fill=PatternFill("solid", fgColor="C6EFCE"), font=Font(name=FONT, color="006100")))
-sh.conditional_formatting.add(f"{w1}5:{w2}{last}", FormulaRule(
-    formula=[f'{w1}5="Requested"'], fill=PatternFill("solid", fgColor="FFEB9C"), font=Font(name=FONT, color="9C5700")))
+if show:
+    w1, w2 = L(7), L(6 + len(show))
+    sh.conditional_formatting.add(f"{w1}5:{w2}{last}", FormulaRule(
+        formula=[f'{w1}5="Uploaded"'], fill=PatternFill("solid", fgColor="C6EFCE"), font=Font(name=FONT, color="006100")))
+    sh.conditional_formatting.add(f"{w1}5:{w2}{last}", FormulaRule(
+        formula=[f'{w1}5="Requested"'], fill=PatternFill("solid", fgColor="FFEB9C"), font=Font(name=FONT, color="9C5700")))
 sh.freeze_panes = "A5"
 sh.sheet_view.showGridLines = False
 sh.protection.sheet = True          # view-only by default; no password, so you can still unprotect locally
