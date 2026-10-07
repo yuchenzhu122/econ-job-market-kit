@@ -74,6 +74,10 @@ and, if `letter_share_gsheet` is set, to that Google Sheet, which the writers ed
   "<user's first name> Comments" and "<writer> Comments" for each writer. Never write into these
   columns, and never edit the Google Sheet directly.
 
+In the Google Sheet the tracker columns and the header rows are protected (only the owner and the
+script can edit); the script keeps those two protections up to date and never touches sharing
+or any other protection.
+
 If the script cannot read the Google Sheet, it leaves the sheet untouched (so nothing the
 writers entered is lost) and still saves the Excel file; pass the warning on to the user.
 

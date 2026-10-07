@@ -5,13 +5,17 @@ and a Google Sheet (config["letter_share_gsheet"], its URL or id) shared with th
 account's client_email as Editor. Share the sheet with your writers as Editor too, so they can
 fill in their status (Sent / Waiting) and Comments columns. What is entered in the hand-filled
 columns (yours and theirs) is read back and kept on every refresh; the script never writes to
-them. Everything else is rewritten from the tracker on each refresh, so edits there do not stick.
+them. The columns filled from the tracker and the header rows are protected, so only you (the
+owner) and the script can change them. Sharing settings and any protections you add yourself
+are never touched.
 """
 import datetime as dt
 import os
 import re
 
 WRITER_CHOICES = [("Waiting", "FFEB9C", "9C5700"), ("Sent", "C6EFCE", "006100")]
+LOCK_TRACKER = "Filled from the tracker (econ-job-market-kit)"
+LOCK_HEADERS = "Column headers (econ-job-market-kit)"
 
 
 def _sheet_id(s):
@@ -90,13 +94,12 @@ def push_letter_list(cfg, title, note, cols, table, link_col, date_cols, status_
     if not table:
         values.append(["No positions need letters yet."])
 
-    # clear everything (values, formats, validation, old conditional rules, any locks) so reruns start fresh
+    # clear values, formats, validation and old conditional rules so reruns start fresh; protected
+    # ranges are left alone (yours, and the two this script keeps up to date below)
     meta = book.fetch_sheet_metadata({"includeGridData": False})
     sheet_meta = next(s for s in meta["sheets"] if s["properties"]["sheetId"] == ws.id)
     reqs = [{"deleteConditionalFormatRule": {"sheetId": ws.id, "index": 0}}
             for _ in sheet_meta.get("conditionalFormats", [])]
-    reqs += [{"deleteProtectedRange": {"protectedRangeId": p["protectedRangeId"]}}
-             for p in sheet_meta.get("protectedRanges", [])]
     reqs.append({"updateCells": {"range": {"sheetId": ws.id}, "fields": "*"}})
     # English month names for the writers, whatever locale the owner's account created the sheet in
     reqs.append({"updateSpreadsheetProperties": {"properties": {"locale": "en_US"}, "fields": "locale"}})
@@ -156,5 +159,18 @@ def push_letter_list(cfg, title, note, cols, table, link_col, date_cols, status_
         reqs.append({"setDataValidation": {"range": rng(4, n_rows, c - 1, c), "rule": {
             "condition": {"type": "ONE_OF_LIST", "values": [{"userEnteredValue": t} for t, *_ in WRITER_CHOICES]},
             "strict": True, "showCustomUi": True}}})
+
+    # lock the columns filled from the tracker (everything left of the first hand-filled column) and
+    # the header rows, so only you and the script can change them; writers keep their own columns
+    first_hand = min(c for c, *_ in hand_cols) - 1 if hand_cols else n_cols
+    mine = {p.get("description"): p for p in sheet_meta.get("protectedRanges", [])}
+    me = book.client.auth.service_account_email   # Google requires the script itself to stay an editor
+    for desc, r in ((LOCK_TRACKER, rng(None, None, 0, first_hand)), (LOCK_HEADERS, rng(0, 4, first_hand, None))):
+        if desc in mine:
+            reqs.append({"updateProtectedRange": {"protectedRange": {
+                "protectedRangeId": mine[desc]["protectedRangeId"], "range": r}, "fields": "range"}})
+        else:
+            reqs.append({"addProtectedRange": {"protectedRange": {
+                "range": r, "description": desc, "editors": {"users": [me]}}}})
     book.batch_update({"requests": reqs})
     return book.url

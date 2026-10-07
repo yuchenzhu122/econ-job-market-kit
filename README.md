@@ -154,6 +154,8 @@ you write in yours.
 - All other columns are rewritten from the tracker, and rows are re-sorted by deadline on every
   refresh. Edit the tracker, not the sheet; writers who want their own view can use
   Data → Filter views.
+- Those tracker columns and the header rows are protected: only you and the script can change
+  them. Sharing settings and any protections you add yourself are never touched.
 - The Excel file is still written as a backup. If Google is unreachable, the sheet is left
   untouched and the rest of the update goes on.
 
@@ -214,7 +216,7 @@ To turn it off, empty `letter_share_gsheet`. Claude can walk you through the set
 - 只分享这份清单，追踪表始终是你自己的，不给任何人。
 - 列：需要推荐信的岗位（按截止日期排序）、工作类型（Type）、截止日期、从哪交、广告链接、你的进展（Status）、你哪天提交的（I Applied On）；然后每位老师一列 Sent / Waiting，最后是你和每位老师的 Comments。
 - 默认：生成一个只读 Excel，放在共享网盘里，链接分享一次就行，每次更新追踪表后自动刷新。
-- **可选：Google Sheet。** 老师可以在里面自己标 Sent / Waiting、写 Comments，你也可以写自己的 Comments。这些内容每次刷新都保留，并且跟着对应岗位走；其他列每次按追踪表重写，行按截止日期重新排序。Excel 照样生成作备份；Google 连不上时表格不动，其他更新照常。
+- **可选：Google Sheet。** 老师可以在里面自己标 Sent / Waiting、写 Comments，你也可以写自己的 Comments。这些内容每次刷新都保留，并且跟着对应岗位走；其他列每次按追踪表重写，行按截止日期重新排序；这些列和表头受保护，只有你和脚本能改（分享设置和你自己加的保护不会被动）。Excel 照样生成作备份；Google 连不上时表格不动，其他更新照常。
   - 设置（一次，约 10 分钟）：在 Google Cloud 建项目、启用 Google Sheets API、建 service account 并下载 JSON 密钥，放到 `google_credentials` 指的位置；在自己的 Google Drive 新建空表，共享给密钥里的 `client_email`（编辑者）；把表格链接填进 `letter_share_gsheet`，`pip3 install gspread`；运行一次 `export_letter_list.py`，再把表以"编辑者"权限分享给老师。也可以直接跟 Claude 说"设置 Google Sheet"，它会一步步带你做。不用的话 `letter_share_gsheet` 留空即可。
 - 你的追踪表里另有每位老师一列，由每晚查邮件根据"信已收到"的邮件标 Received，只有你自己看得到。
 
