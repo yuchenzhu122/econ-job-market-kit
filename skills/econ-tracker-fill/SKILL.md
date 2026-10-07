@@ -1,6 +1,6 @@
 ---
 name: econ-tracker-fill
-description: Fill in an economics job market application tracker from posting links. Use when the user says "fill the tracker", "补全追踪表", "read the links in my tracker", or has pasted job links into the tracker's Link column and wants the rest of each row completed. Also use for "update the letter list", "更新老师那页", "refresh the letter writers' file". Reads each posting and fills Employer, Position, Type, Track, Apply Via, Deadline, Letters?, Still Need, Notes. Does not write cover letters (that is econ-cover-letter).
+description: Fill in an economics job market application tracker from posting links. Use when the user says "fill the tracker", "补全追踪表", "read the links in my tracker", or has pasted job links into the tracker's Link column and wants the rest of each row completed. Also use for "update the letter list", "更新老师那页", "refresh the letter writers' file", and for setting up the letter writers' Google Sheet ("set up the Google Sheet", "设置Google Sheet"). Reads each posting and fills Employer, Position, Type, Track, Apply Via, Deadline, Letters?, Still Need, Notes. Does not write cover letters (that is econ-cover-letter).
 ---
 
 # Fill tracker rows from posting links
@@ -18,6 +18,8 @@ Tracker layout (built by `scripts/build_tracker.py`): sheet `Tracker`, headers i
 data from row 5. Columns: Track, Employer, Position, Type, Apply Via, Link, Deadline,
 Days Left (formula), Status, Still Need, Cover Letter, Letters?, one column per letter
 writer, Notes. Dropdown values come from the `Lists` sheet; only write values listed there.
+The writer columns hold "Received" and are filled only by the mail check (econ-mail-check) when
+a confirmation email says that writer's letter arrived; never fill or change them here.
 
 ## Steps
 
@@ -51,10 +53,49 @@ writer, Notes. Dropdown values come from the `Lists` sheet; only write values li
    `wb.save` (Excel re-saves the dropdowns in a format openpyxl drops). If saving fails, ask the user to close
    the file in Excel and retry.
 5. **Refresh the shared letter list**: run `python3 <repo>/scripts/export_letter_list.py`. It rewrites
-   `letter_share_file` from config.json (the file the letter writers have a link to).
+   `letter_share_file` from config.json (the file the letter writers have a link to), and the Google
+   Sheet in `letter_share_gsheet` if one is set. Pass on any "Google Sheet not updated" warning.
 6. **Report** (in the user's language): a short table of filled rows (Employer, Position,
    Deadline, Apply Via, Letters?, Still Need), rows you could not read and why, and what to
    double-check (inferred deadlines, ambiguous Type). Offer to draft cover letters.
+
+## The shared letter list
+
+The tracker is private and never shared. The letter writers see only this list.
+
+`scripts/export_letter_list.py` writes it from the tracker (rows with Letters? = Yes, minus
+Rejected / Withdrawn, soonest deadline first) to `letter_share_file` (a read-only Excel backup)
+and, if `letter_share_gsheet` is set, to that Google Sheet, which the writers edit. Columns:
+
+- From the tracker, rewritten on every refresh: #, Deadline, Employer, Position, Type, Submit
+  Letter Via, Link, Status, I Applied On. To change these, change the tracker, not the sheet.
+- Filled by hand, read back and kept on every refresh (matched by Link, else Employer +
+  Position): one status column per writer (Sent / Waiting, filled by the writers), then
+  "<user's first name> Comments" and "<writer> Comments" for each writer. Never write into these
+  columns, and never edit the Google Sheet directly.
+
+If the script cannot read the Google Sheet, it leaves the sheet untouched (so nothing the
+writers entered is lost) and still saves the Excel file; pass the warning on to the user.
+
+## Set up the Google Sheet (one time)
+
+The user does the Google steps; never create accounts or keys, and never ask the user to paste
+the key file's contents into the chat. Walk them through, in their language:
+
+1. https://console.cloud.google.com/ with a personal Gmail (university accounts often block
+   key creation: "Key creation is disabled by organization policy"). New Project, then search
+   **Google Sheets API** and Enable it.
+2. IAM & Admin → Service Accounts → Create service account (no role needed) → open it → Keys →
+   Add key → Create new key → JSON. Keep the downloaded file private.
+3. Move it to the `google_credentials` path in config.json (default
+   `~/.config/econ-job-market-kit/google-service-account.json`), e.g.
+   `mkdir -p ~/.config/econ-job-market-kit` then `mv ~/Downloads/<file>.json <that path>`.
+4. https://sheets.new → Share with the key's `client_email` as **Editor** (untick notify), and
+   send you the sheet's link.
+
+Then: `pip3 install gspread` if missing; check the key file exists (do not print it); put the
+link in `letter_share_gsheet` in config.json; run `export_letter_list.py`; open the sheet and
+check it. Finally the user shares the sheet with the writers as **Editor** and sends the link once.
 
 ## Rules
 

@@ -1,6 +1,6 @@
 ---
 name: econ-mail-check
-description: Check the user's Apple Mail for job application confirmations and recommendation-letter notifications, and record them in the job market tracker (Submitted date, Status, each letter writer's Uploaded status), then refresh the letter writers' shared list. Use when the user says "check my email for applications", "扫一下邮件", "更新提交状态", or when the daily mail-check scheduled task fires.
+description: Check the user's Apple Mail for job application confirmations and recommendation-letter notifications, and record them in the job market tracker (Submitted date, Status, Received under each letter writer), then refresh the letter writers' shared list. Use when the user says "check my email for applications", "扫一下邮件", "更新提交状态", or when the daily mail-check scheduled task fires.
 ---
 
 # Daily mail check
@@ -32,16 +32,18 @@ ad-hoc scripts.
      `submitted`: `{"row": N, "submitted": "YYYY-MM-DD"}`.
    - **A letter notification**: a system saying a recommendation letter from a named writer was
      received / uploaded / completed for a row. Writer must be one of `letter_writers` in
-     config.json: `{"row": N, "writer": "<Name>", "letter": "Uploaded"}`.
+     config.json: `{"row": N, "writer": "<Name>", "letter": "Received"}`. This marks Received in
+     that writer's tracker column (the shared list is only filled by the writers). A reminder
+     that a letter is still missing: no update, list it in the report.
    - **Anything else** (requests to complete an application, rejections, interview invitations,
      newsletters, job alerts): no update. Mention rejections and interview invitations in the
      report so the user can update Status themselves.
 3. If an email clearly confirms an application but no tracker row matches, do not add a row:
    list it in the report.
 4. `apply` the updates (or `[]`).
-5. Report in Chinese, briefly: applications marked submitted, letters marked uploaded, emails
-   that need the user's attention (unmatched confirmations, interview invitations, rejections,
-   missing-letter reminders). If nothing changed, say so in one line.
+5. Report in Chinese, briefly: applications marked submitted, letters marked Received, missing-letter
+   reminders, and emails that need the user's attention (unmatched
+   confirmations, interview invitations, rejections). If nothing changed, say so in one line.
 
 ## Rules
 

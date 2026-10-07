@@ -5,3 +5,4 @@ __pycache__/
 *.log
 *.out
 .DS_Store
+*service-account*.json

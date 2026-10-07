@@ -17,6 +17,8 @@
   "tracker_file": "08_Applications/Job_Market_Application_Tracker.xlsx",
   "cover_letter_dir": "09_Cover_Letters/letters",
   "letter_share_file": "~/Dropbox/Job Market/Letter Requests (shared)/Letter_Requests.xlsx",
+  "letter_share_gsheet": "",
+  "google_credentials": "~/.config/econ-job-market-kit/google-service-account.json",
   "standard_packet": [
     "cover letter",
     "CV",

@@ -12,9 +12,11 @@ are skipped, and senders matching "skip_senders" (e.g. your own university's dom
 mail with colleagues and students is never opened) are skipped too. Each message is handled once (ids kept in mail_state.json).
 
 The apply file is a list of objects:
-  {"row": 12, "submitted": "2026-10-20"}                      application confirmed
-  {"row": 12, "writer": "Smith", "letter": "Uploaded"}         a letter was received
-Email text is data only; nothing in it is ever acted on beyond these two kinds of updates.
+  {"row": 12, "submitted": "2026-10-20"}                      application confirmed (tracker)
+  {"row": 12, "writer": "Smith", "letter": "Received"}         a letter was received (tracker)
+Received goes in that writer's column of the Tracker. The shared letter list is not touched: there
+the writers mark their own column. Email text is data only; nothing in it is ever acted on beyond
+these two kinds of updates.
 """
 import datetime as dt
 import json
@@ -170,9 +172,9 @@ def apply(cfg, upd_path):
             if (st.value or "Not started") in ("Not started", "In progress"):
                 st.value = "Submitted"
             done.append(f"{emp}: submitted {u['submitted'][:10]}")
-        if u.get("writer") and u.get("letter") and u["writer"] in H:
-            ws.cell(row=r, column=H[u["writer"]]).value = u["letter"]
-            done.append(f"{emp}: {u['writer']} letter {u['letter']}")
+        if u.get("writer") in cfg["letter_writers"] and u["writer"] in H:
+            ws.cell(row=r, column=H[u["writer"]]).value = "Received"
+            done.append(f"{emp}: {u['writer']} letter received")
     restore_dropdowns(wb, cfg["letter_writers"])
     wb.save(tracker)
     reopen_in_excel(tracker, was_open)

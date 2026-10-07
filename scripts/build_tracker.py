@@ -51,7 +51,7 @@ lists = {
     "Status": ["Not started", "In progress", "Submitted", "Interview", "Flyout", "Offer",
                "Rejected", "Withdrawn"],
     "Yes/No": ["Yes", "No"],
-    "Letter": ["Requested", "Uploaded"],
+    "Letter": ["Received"],
     "Cover Letter": ["To write", "Drafted", "Final", "Not needed"],
 }
 ls["A1"] = "Dropdown options — add new options at the bottom of any column."; ls["A1"].font = fbold
@@ -77,8 +77,9 @@ cols = [  # header, width, kind, note
     ("Submitted", 12, "date", "Date you submitted. Filled automatically from confirmation emails (mail_scan.py)."),
     ("Still Need", 26, "in", "Type what's missing, e.g. 'cover letter, teaching evals'. Leave blank when everything is ready."),
     ("Cover Letter", 11, "in", "To write / Drafted / Final / Not needed. Ask Claude: 'write the cover letter for <Employer>' and it updates this cell. Files are in 09_Cover_Letters."),
-    ("Letters?", 9, "in", "Yes = this job needs recommendation letters (it will show up on the letter-writer tab)."),
-] + [(w, 12, "letter", "Pick Requested when you ask, Uploaded when it's done.") for w in WRITERS] + [
+    ("Letters?", 9, "in", "Yes = this job needs recommendation letters (it will show up on the letter writers' list)."),
+] + [(w, 12, "letter", "Filled by the mail check: Received once the application system confirms this writer's letter arrived.")
+     for w in WRITERS] + [
     ("Notes", 34, "in", "Anything else: interview dates, contacts, what to stress in the cover letter."),
     ("_sort", 6, "auto", None), ("_order", 6, "auto", None),
 ]
@@ -127,7 +128,7 @@ examples = [
     {"Track": "Academic", "Employer": "EXAMPLE – State University", "Position": "Assistant Professor (Labor/Education)",
      "Type": "Tenure-track", "Apply Via": "EconJobMarket", "Link": "https://www.aeaweb.org/joe/",
      "Deadline": dt.date(2026, 11, 15), "Status": "In progress", "Still Need": "teaching evals", "Cover Letter": "Drafted",
-     "Letters?": "Yes", **{w: s for w, s in zip(WRITERS, ["Uploaded", "Requested", "Requested"])},
+     "Letters?": "Yes", WRITERS[0]: "Received",
      "Notes": "Mention their education policy center in the cover letter."},
     {"Track": "Industry", "Employer": "EXAMPLE – Tech Company", "Position": "Economist",
      "Type": "Tech", "Apply Via": "Employer website", "Link": "https://example.com/careers",
@@ -156,48 +157,15 @@ for val, f1, c1 in [("Submitted", "C6EFCE", "006100"), ("Interview", "BDD7EE", "
                     ("Offer", "70AD47", "FFFFFF"), ("In progress", "FFEB9C", "9C5700"),
                     ("Rejected", "EDEDED", "7F7F7F"), ("Withdrawn", "EDEDED", "7F7F7F")]:
     cfr(tr, srng, f'{sk}="{val}"', f1, c1)
-wf, wl = C[WRITERS[0]], C[WRITERS[-1]]
-cfr(tr, f"{wf}{FIRST}:{wl}{LAST}", f'{wf}{FIRST}="Uploaded"', "C6EFCE", "006100")
-cfr(tr, f"{wf}{FIRST}:{wl}{LAST}", f'{wf}{FIRST}="Requested"', "FFEB9C", "9C5700")
+if WRITERS:
+    wf, wl = C[WRITERS[0]], C[WRITERS[-1]]
+    cfr(tr, f"{wf}{FIRST}:{wl}{LAST}", f'{wf}{FIRST}="Received"', "C6EFCE", "006100")
 clk = f"${C['Cover Letter']}{FIRST}"; clr = f"{C['Cover Letter']}{FIRST}:{C['Cover Letter']}{LAST}"
 cfr(tr, clr, f'{clk}="To write"', "F8CBAD", "9C0006")
 cfr(tr, clr, f'{clk}="Drafted"', "FFEB9C", "9C5700")
 cfr(tr, clr, f'{clk}="Final"', "C6EFCE", "006100")
 sn = f"${C['Still Need']}{FIRST}"
 cfr(tr, f"{C['Still Need']}{FIRST}:{C['Still Need']}{LAST}", f'AND({sn}<>"",${E}{FIRST}<>"")', "FFF2CC")
-
-# ---------------- For Letter Writers
-lw = wb.create_sheet("For Letter Writers", 1)
-lw["A1"] = "Recommendation Letters · " + CFG["name"] + " · " + SEASON; lw["A1"].font = ft
-lw["A2"] = "Jobs that need letters, soonest deadline first. Updates automatically. Thank you!"; lw["A2"].font = fsub
-lcols = [("#", 5), ("Deadline", 12), ("Days Left", 9), ("Employer", 30), ("Position", 30),
-         ("Upload Letter Via", 20), ("Link", 28)] + [(w, 12) for w in WRITERS]
-for i, (h, w) in enumerate(lcols, start=1):
-    c = lw.cell(row=4, column=i, value=h); c.font = fh; c.fill = hfill; c.alignment = ctr; c.border = bd
-    lw.column_dimensions[L(i)].width = w
-src = {"Deadline": DL, "Employer": E, "Position": C["Position"], "Upload Letter Via": C["Apply Via"], "Link": C["Link"]}
-for w in WRITERS:
-    src[w] = C[w]
-order = f"Tracker!${C['_order']}${FIRST}:${C['_order']}${LAST}"
-for k in range(1, N + 1):
-    r = 4 + k
-    lw[f"A{r}"] = f'=IF(COUNTIF({order},{k})>0,{k},"")'
-    for i, (h, w) in enumerate(lcols, start=1):
-        cell = lw.cell(row=r, column=i); cell.font = fb; cell.border = bd
-        cell.alignment = ctr if h in ("#", "Deadline", "Days Left") or h in WRITERS else wrap
-        if h in src:
-            col = src[h]; idx = f"INDEX(Tracker!${col}${FIRST}:${col}${LAST},MATCH($A{r},{order},0))"
-            cell.value = f'=IF($A{r}="","",IF({idx}="","",{idx}))'
-        if h == "Deadline":
-            cell.number_format = "mmm d, yyyy"
-        if h == "Days Left":
-            cell.value = f'=IF(OR($A{r}="",$B{r}=""),"",$B{r}-TODAY())'
-            cell.number_format = '0;"late "0;"today"'
-lw.freeze_panes = "B5"
-w1, w2 = L(8), L(7 + len(WRITERS))
-cfr(lw, f"{w1}5:{w2}{4 + N}", f'{w1}5="Uploaded"', "C6EFCE", "006100")
-cfr(lw, f"{w1}5:{w2}{4 + N}", f'{w1}5="Requested"', "FFEB9C", "9C5700")
-cfr(lw, f"C5:C{4 + N}", "AND(ISNUMBER($C5),$C5<=7)", "F8CBAD", "9C0006", True)
 
 # ---------------- Summary
 sm = wb.create_sheet("Summary", 2)
@@ -225,13 +193,6 @@ for k, (lab, f) in enumerate([("Due within 7 days (not submitted)", f'=COUNTIFS(
                               ("Due within 14 days (not submitted)", f'=COUNTIFS({dlc},">=0",{dlc},"<=14")'),
                               ("Past deadline, not submitted", f'=COUNTIF({dlc},"<0")')], start=r0):
     sm.cell(row=k, column=1, value=lab).font = fb; sm.cell(row=k, column=2, value=f).font = fbold
-    sm.cell(row=k, column=1).border = bd; sm.cell(row=k, column=2).border = bd
-r1 = r0 + 4
-for j, h in enumerate(["Letters still waiting", "Count"], start=1):
-    c = sm.cell(row=r1, column=j, value=h); c.font = fh; c.fill = hfill
-for k, w in enumerate(WRITERS, start=r1 + 1):
-    sm.cell(row=k, column=1, value=w).font = fb
-    sm.cell(row=k, column=2, value=f'=COUNTIF(Tracker!${C[w]}${FIRST}:${C[w]}${LAST},"Requested")').font = fbold
     sm.cell(row=k, column=1).border = bd; sm.cell(row=k, column=2).border = bd
 sm.column_dimensions["A"].width = 36
 for j in range(2, 6):
@@ -276,11 +237,10 @@ steps = [
     ("1  Find a job", "Fastest: paste just the posting URL into the Link column, then ask Claude '补全追踪表' (fill the tracker) — it reads each link and fills the rest. Or fill the row yourself: Track, Employer, Position, Apply Via, Link, Deadline, Status, Letters?."),
     ("2  Missing stuff", "Type it in 'Still Need' (e.g. 'teaching evals'). Clear it when ready."),
     ("   Cover letter", "Ask Claude: 'write the cover letter for <Employer>'. It drafts a tailored letter into 09_Cover_Letters and sets the Cover Letter column to Drafted."),
-    ("3  Letters", "Under each professor's name pick Requested when you ask, Uploaded when it's done."),
+    ("3  Letters", "Set Letters? = Yes. When you submit, the application system invites all your writers; they mark Sent / Waiting on the shared Letter Requests list. The columns under their names here fill in when a confirmation email says their letter was received."),
     ("4  Submitted", "Change Status to Submitted. The countdown disappears."),
     ("Watch", "Days Left turns yellow at 14 days and red at 7 days."),
-    ("Share", "Send professors the 'For Letter Writers' tab (it builds itself). For privacy, copy that tab to a new file: "
-              "right-click tab → Move or Copy → (new book) → Create a copy."),
+    ("Share", "This tracker is private. Writers get only the Letter Requests list (Google Sheet, Excel backup) made by export_letter_list.py; it refreshes after every update."),
     ("Start", "Delete the two grey EXAMPLE rows on Tracker."),
 ]
 for k, (a, b) in enumerate(steps, start=3):
@@ -288,9 +248,8 @@ for k, (a, b) in enumerate(steps, start=3):
     y = rm.cell(row=k, column=2, value=b); y.font = fb; y.alignment = wrap
 rm.column_dimensions["A"].width = 18; rm.column_dimensions["B"].width = 110
 
-wb._sheets = [wb["Read Me"], wb["Tracker"], wb["For Letter Writers"], wb["Summary"], wb["Key Dates"], wb["Lists"]]
+wb._sheets = [wb["Read Me"], wb["Tracker"], wb["Summary"], wb["Key Dates"], wb["Lists"]]
 wb["Tracker"].sheet_properties.tabColor = NAVY
-wb["For Letter Writers"].sheet_properties.tabColor = "C55A11"
 wb.active = 1
 for ws in wb.worksheets:
     ws.sheet_view.showGridLines = ws.title == "Lists"

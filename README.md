@@ -11,23 +11,24 @@ submit by reading confirmation emails, and gives your letter writers a list that
 
 | | |
 |---|---|
-| `scripts/build_tracker.py` | Builds an Excel tracker: one row per job, deadline countdown, Submitted date, academic / industry / government tracks, a **For Letter Writers** tab with each writer's status, a summary tab, and the AEA key dates. |
+| `scripts/build_tracker.py` | Builds an Excel tracker: one row per job, deadline countdown, Submitted date, academic / industry / government tracks, a column per letter writer (Received, from the mail check), a summary tab, and the AEA key dates. The tracker stays private; writers only ever see the Letter Requests list. |
 | `scripts/scan_postings.py` | Pulls current postings from JOE, EconJobMarket, the IMF and World Bank career sites, and Chronicle Jobs and Inside Higher Ed Careers; filters by rank, field, deadline and section; skips ones already seen. |
 | `scripts/leads.py` | Adds rated postings to a **Leads** sheet in the tracker, and moves the ones you mark Add into the Tracker. |
 | `scripts/update_tracker.py` | One step, no Claude needed: moves Leads marked Add into the Tracker and refreshes the letter-writer file. Works while Excel has the tracker open (it saves, updates and reopens it). Also runs from a **▶ Update Tracker** link in the sheet (see below). |
 | `scripts/make_letter.py` | Builds a cover letter PDF from your own paragraphs in `config.json`, in two templates: `research` (one page) and `teaching` (up to two pages). Only the fit paragraph is new per school. |
-| `scripts/export_letter_list.py` | Writes a separate, read-only Excel file for your letter writers to a shared Dropbox/OneDrive/Google Drive folder: positions that need letters, deadline, where to submit, link, and the date you applied. Share its link once; the same file is rewritten on every update. Writers can hide columns, sort and filter, but not edit. Each writer's Requested/Uploaded status stays private unless `letter_share_show_status` is true. |
+| `scripts/export_letter_list.py` | Builds the list your letter writers see (the only thing you share; the tracker stays private): positions that need letters, soonest deadline first, with type of job, deadline, where to submit, link, your status and the date you applied, then a status column per writer (Sent / Waiting) and Comments columns for you and each writer. Always writes a read-only Excel file to `letter_share_file`; **optionally** also writes it to a Google Sheet that writers can fill in (see [Google Sheet for letter writers](#google-sheet-for-letter-writers-optional)). Rewritten on every update, so the link never changes. |
 | `scripts/mail_scan.py` | Reads recent mail through the Mail app already signed in on your Mac (no passwords). Opens only emails that look like application-system or letter notifications, never senders in `mail.skip_senders` (e.g. your own university). |
 | `scripts/md2pdf.py` | Converts a Markdown research or teaching statement into a PDF with the same letterhead. |
 | `skills/econ-job-scan` | Claude Code skill: runs the scan, rates each new posting against your `profile`, checks visa rules, writes the Leads sheet. |
 | `skills/econ-tracker-fill` | Claude Code skill: reads the links in your tracker and fills employer, position, deadline, where to apply, whether letters are needed, and extra materials. |
 | `skills/econ-cover-letter` | Claude Code skill: picks the template, reads the posting and the department's pages, writes the fit paragraph, builds the PDF, marks it Drafted. Guidance in `skills/econ-cover-letter/templates.md`. |
-| `skills/econ-mail-check` | Claude Code skill: runs the mail scan, records Submitted dates and letter uploads in the tracker, refreshes the writers' list. |
+| `skills/econ-mail-check` | Claude Code skill: runs the mail scan, records Submitted dates and letters Received in the tracker, refreshes the writers' list. |
 
 ## Setup (about 10 minutes)
 
 Requirements: macOS for the Mail and Shortcuts features, Python 3 with `openpyxl`, a LaTeX
-install with `pdflatex` (TinyTeX is enough), and Claude Code (desktop app or CLI).
+install with `pdflatex` (TinyTeX is enough), and Claude Code (desktop app or CLI). Optional:
+`gspread` and a Google service account, only if you want the Google Sheet for letter writers.
 
 ```bash
 git clone https://github.com/<you>/econ-job-market-kit.git ~/econ-job-market-kit
@@ -43,7 +44,8 @@ done
 In `config.json` set:
 
 - your name and contact details, your letter writers, `job_market_dir`, and the shared
-  `letter_share_file`;
+  `letter_share_file`; leave `letter_share_gsheet` empty unless you set up the optional Google
+  Sheet;
 - `cover_letter`: your own paragraphs for both templates (see Cover letters);
 - `profile` and `scan`: fields, what you want in order of priority, work authorization, filters;
 - `mail`: the Mail account and mailbox to read, how many days back, and `skip_senders`.
@@ -58,9 +60,10 @@ In `config.json` set:
 3. **Write letters.** Say "write the cover letter for <Employer>". You review the PDF and set Final.
 4. **Submit** on the employer's site yourself.
 5. **Nothing to log by hand.** Every evening the mail check records the Submitted date when a
-   confirmation email arrives and marks a writer Uploaded when a system says their letter came in.
-   The writers' list shows the date you applied.
-6. Share the writers' file once (view-only link). It refreshes after every tracker update.
+   confirmation email arrives, and marks a writer Received in the tracker when a system says their
+   letter came in. The writers' list shows your status and the date you applied.
+6. Share the writers' list once: the Excel file's view-only link, or the Google Sheet (as
+   Editor) if you set it up. It refreshes after every tracker update.
 
 ## Cover letters
 
@@ -140,6 +143,35 @@ and Leads sheets runs it.
 
 Statements: `python3 scripts/md2pdf.py research_statement.md "Research Statement" refs.tex`
 
+## Google Sheet for letter writers (optional)
+
+Skip this section if a read-only Excel file is enough. With it, writers get a Google Sheet link
+where each of them marks their status (Sent / Waiting) and writes in their Comments column, and
+you write in yours.
+
+- Columns you and the writers fill in are read back before every refresh and kept, matched to
+  each position by link (or employer and position), so they stay with the right job.
+- All other columns are rewritten from the tracker, and rows are re-sorted by deadline on every
+  refresh. Edit the tracker, not the sheet; writers who want their own view can use
+  Data → Filter views.
+- The Excel file is still written as a backup. If Google is unreachable, the sheet is left
+  untouched and the rest of the update goes on.
+
+Setup (about 10 minutes, once):
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), create a project, enable the
+   **Google Sheets API**, create a **service account** (no roles needed), and under Keys add a
+   JSON key. Save it at the `google_credentials` path in `config.json`
+   (default `~/.config/econ-job-market-kit/google-service-account.json`). Keep it private.
+2. Create a blank Google Sheet in your own Drive. Share it with the service account's
+   `client_email` (inside the JSON file) as **Editor**.
+3. Paste the sheet's URL into `letter_share_gsheet` and run `pip3 install gspread`.
+4. Run `python3 scripts/export_letter_list.py` once, then share the sheet with your writers as
+   **Editor** (by email) and send the link once.
+
+To turn it off, empty `letter_share_gsheet`. Claude can walk you through the setup: say
+"set up the Google Sheet".
+
 ## Notes
 
 - Nothing here submits applications, sends email, or logs in to any site; you submit.
@@ -174,14 +206,17 @@ Statements: `python3 scripts/md2pdf.py research_statement.md "Research Statement
 **4. 自动记录提交（每晚 9 点）**
 
 - 读 Mac "邮件" App 里最近的邮件（不需要密码；`skip_senders` 里的发件人，比如本校邮箱，一律不打开）。
-- 看到申请确认，就在 Tracker 的 **Submitted** 列填上日期、状态改成 Submitted；看到推荐信已收到的通知，就把对应老师标成 Uploaded；对不上的、面试邀请、拒信会在小结里提醒你。
+- 看到申请确认，就在 Tracker 的 **Submitted** 列填上日期、状态改成 Submitted；看到推荐信已收到的通知，就在 Tracker 里对应老师那一列标 Received；对不上的、面试邀请、拒信会在小结里提醒你。
 - 运行时 Claude 桌面版和"邮件"都要开着。
 
-**5. 给推荐人的分享文件**
+**5. 给推荐人的清单**
 
-- 只读的 Excel，放在共享网盘里，链接分享一次就行，每次更新追踪表后自动刷新。
-- 老师能看到：需要推荐信的岗位、截止日期、从哪交、广告链接、你哪天提交的（I Applied On）。可以隐藏列、排序、筛选，但改不了内容。
-- 每位老师交没交（Requested / Uploaded）默认只有你自己能看到，在你的追踪表里。
+- 只分享这份清单，追踪表始终是你自己的，不给任何人。
+- 列：需要推荐信的岗位（按截止日期排序）、工作类型（Type）、截止日期、从哪交、广告链接、你的进展（Status）、你哪天提交的（I Applied On）；然后每位老师一列 Sent / Waiting，最后是你和每位老师的 Comments。
+- 默认：生成一个只读 Excel，放在共享网盘里，链接分享一次就行，每次更新追踪表后自动刷新。
+- **可选：Google Sheet。** 老师可以在里面自己标 Sent / Waiting、写 Comments，你也可以写自己的 Comments。这些内容每次刷新都保留，并且跟着对应岗位走；其他列每次按追踪表重写，行按截止日期重新排序。Excel 照样生成作备份；Google 连不上时表格不动，其他更新照常。
+  - 设置（一次，约 10 分钟）：在 Google Cloud 建项目、启用 Google Sheets API、建 service account 并下载 JSON 密钥，放到 `google_credentials` 指的位置；在自己的 Google Drive 新建空表，共享给密钥里的 `client_email`（编辑者）；把表格链接填进 `letter_share_gsheet`，`pip3 install gspread`；运行一次 `export_letter_list.py`，再把表以"编辑者"权限分享给老师。也可以直接跟 Claude 说"设置 Google Sheet"，它会一步步带你做。不用的话 `letter_share_gsheet` 留空即可。
+- 你的追踪表里另有每位老师一列，由每晚查邮件根据"信已收到"的邮件标 Received，只有你自己看得到。
 
 **6. Statement 转 PDF**：research / teaching statement 用 Markdown 写，一条命令排成 PDF。
 
