@@ -20,12 +20,18 @@ If config["letter_share_gsheet"] is set, the list is written into that Google Sh
 scripts/gsheet.py for the one-time setup); the Excel file is still saved as a backup.
 """
 import datetime as dt
+import glob
+import json
 import os
+import sys
+import time
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.styles import Protection
 from openpyxl.utils import get_column_letter as L
+from openpyxl.worksheet.datavalidation import DataValidation
 
 from common import jm_path, load_config
 from gsheet import WRITER_CHOICES, row_keys
@@ -63,6 +69,33 @@ def read_xlsx_status(path, headers):
     return out
 
 
+def _state_path(cfg):
+    return os.path.join(os.path.dirname(jm_path(cfg, cfg["tracker_file"])), "letter_share_state.json")
+
+
+def recently_edited(cfg, dst, minutes=10):
+    """True if someone other than this script saved the shared file in the last few minutes."""
+    if not os.path.exists(dst):
+        return False
+    mtime = os.path.getmtime(dst)
+    try:
+        ours = json.load(open(_state_path(cfg))).get("mtime")
+    except (OSError, ValueError):
+        ours = None
+    return (ours is None or abs(mtime - ours) > 0.001) and time.time() - mtime < minutes * 60
+
+
+def remember_write(cfg, dst):
+    if os.path.exists(dst):
+        json.dump({"mtime": os.path.getmtime(dst)}, open(_state_path(cfg), "w"))
+
+
+def conflicted_copies(dst):
+    stem, ext = os.path.splitext(os.path.basename(dst))
+    return [p for p in glob.glob(os.path.join(os.path.dirname(dst), glob.escape(stem) + "*" + ext))
+            if p != dst and ("conflict" in p.lower() or "冲突" in p)]
+
+
 def export():
     cfg = load_config()
     src = jm_path(cfg, cfg["tracker_file"])
@@ -78,8 +111,18 @@ def export():
             # never overwrite the sheet without having read what the writers entered
             print(f"WARNING: could not read the Google Sheet ({type(e).__name__}: {e}); it is left as is.")
     if prev is None:
+        if recently_edited(cfg, dst) and "--force" not in sys.argv:
+            print("Skipped: the shared list was edited in the last 10 minutes (someone may still be typing). "
+                  "It will refresh on the next run; use --force to refresh now.")
+            return
         prev = read_xlsx_status(dst, hand)
+        for copy in conflicted_copies(dst):
+            # Dropbox keeps both versions when two people save at once; take what was typed there too
+            for k, got in read_xlsx_status(copy, hand).items():
+                prev[k] = {**got, **prev.get(k, {})}
+            print(f"NOTE: found {os.path.basename(copy)}; its entries were merged in. You can delete it.")
     _write(cfg, src, dst, hand, prev, gsheet_ok)
+    remember_write(cfg, dst)
 
 
 def _write(cfg, src, dst, hand, prev, gsheet_ok):
@@ -105,7 +148,10 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
         sub = get("Submitted") if "Submitted" in hdr else None
         if isinstance(sub, dt.datetime):
             sub = sub.date()
-        got = next((prev[k] for k in row_keys(get("Link"), emp, get("Position")) if k in prev), {})
+        got = dict(next((prev[k] for k in row_keys(get("Link"), emp, get("Position")) if k in prev), {}))
+        for w in cfg["letter_writers"]:       # the mail check confirmed this letter: show it to everyone
+            if w in hdr and str(get(w) or "").strip() in ("Received", "Uploaded"):
+                got[w] = "Received"
         rows.append({"Deadline": d, "Submitted": sub, "Employer": emp, "Position": get("Position"), "Type": get("Type"),
                      "Apply Via": get("Apply Via"), "Link": get("Link"), "Status": status,
                      **{h: got.get(h, "") for h in hand}})
@@ -127,7 +173,8 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
     sh["A1"].font = Font(name=FONT, size=15, bold=True, color=accent)
     sh["A2"] = (f"Positions that need a letter, soonest deadline first. Once I submit (Status = Submitted, "
                 f"'I Applied On' filled), the application system sends each of you the upload request. "
-                f"Please mark your own column Sent / Waiting; comments are welcome in your Comments column. Last updated "
+                f"Please mark your own column Sent / Waiting; it changes to Received when the system confirms your letter. "
+                f"Comments are welcome in your Comments column; everything else is locked. Last updated "
                 f"{dt.date.today().strftime('%B %-d, %Y')}. Thank you for your support!")
     sh["A2"].font = Font(name=FONT, size=10, italic=True, color="555555")
     # no formulas: the file is mostly viewed in a browser preview (Dropbox/OneDrive), which does not
@@ -166,7 +213,16 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
                 formula=[f'{a}5="{text}"'], fill=PatternFill("solid", fgColor=bg), font=Font(name=FONT, color=fg)))
     sh.freeze_panes = "A5"
     sh.sheet_view.showGridLines = False
-    sh.protection.sheet = True          # view-only by default; no password, so you can still unprotect locally
+    # locked except the hand-filled columns (writer status and comments), which anyone with the link can edit
+    for c, kind, _ in HAND:
+        for r in range(5, max(last, 5) + 1):
+            sh.cell(row=r, column=c).protection = Protection(locked=False)
+    if rows:
+        dv = DataValidation(type="list", formula1='"' + ",".join(t for t, *_ in WRITER_CHOICES) + '"', allow_blank=True)
+        sh.add_data_validation(dv)
+        for c in WCOLS:
+            dv.add(f"{L(c)}5:{L(c)}{last}")
+    sh.protection.sheet = True          # no password, so you can still unprotect locally
     # ...but still let viewers hide/resize columns and rows, sort and filter (False = allowed)
     for opt in ("formatColumns", "formatRows", "sort", "autoFilter"):
         setattr(sh.protection, opt, False)

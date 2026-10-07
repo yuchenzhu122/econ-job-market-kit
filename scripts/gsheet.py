@@ -11,7 +11,8 @@ import datetime as dt
 import os
 import re
 
-WRITER_CHOICES = [("Waiting", "FFEB9C", "9C5700"), ("Sent", "C6EFCE", "006100")]
+# Received is filled automatically when the mail check finds the system's confirmation
+WRITER_CHOICES = [("Waiting", "FFEB9C", "9C5700"), ("Sent", "C6EFCE", "006100"), ("Received", "BDD7EE", "1F3864")]
 
 
 def _sheet_id(s):

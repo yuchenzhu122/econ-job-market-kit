@@ -16,7 +16,7 @@ submit by reading confirmation emails, and gives your letter writers a list that
 | `scripts/leads.py` | Adds rated postings to a **Leads** sheet in the tracker, and moves the ones you mark Add into the Tracker. |
 | `scripts/update_tracker.py` | One step, no Claude needed: moves Leads marked Add into the Tracker and refreshes the letter-writer file. Works while Excel has the tracker open (it saves, updates and reopens it). Also runs from a **▶ Update Tracker** link in the sheet (see below). |
 | `scripts/make_letter.py` | Builds a cover letter PDF from your own paragraphs in `config.json`, in two templates: `research` (one page) and `teaching` (up to two pages). Only the fit paragraph is new per school. |
-| `scripts/export_letter_list.py` | Builds the list your letter writers see (the only thing you share; the tracker stays private): positions that need letters, soonest deadline first, with type of job, deadline, where to submit, link, your status and the date you applied, then a status column per writer (Sent / Waiting) and Comments columns for you and each writer. Always writes a read-only Excel file to `letter_share_file`; **optionally** also writes it to a Google Sheet that writers can fill in (see [Google Sheet for letter writers](#google-sheet-for-letter-writers-optional)). Rewritten on every update, so the link never changes. |
+| `scripts/export_letter_list.py` | Builds the list your letter writers see (the only thing you share; the tracker stays private): positions that need letters, soonest deadline first, with type of job, deadline, where to submit, link, your status and the date you applied, then a status column per writer (Sent / Waiting) and Comments columns for you and each writer. Always writes an Excel file to `letter_share_file` in which only the writer status and Comments columns are editable (share it with edit access); writers' entries are read back and kept on every refresh, a refresh is skipped if someone saved the file in the last 10 minutes, and Dropbox conflicted copies are merged in. A writer's column turns Received when the mail check finds the system's confirmation. **Optionally** it also writes a Google Sheet (see [Google Sheet for letter writers](#google-sheet-for-letter-writers-optional)). Rewritten on every update, so the link never changes. |
 | `scripts/mail_scan.py` | Reads recent mail through the Mail app already signed in on your Mac (no passwords). Opens only emails that look like application-system or letter notifications, never senders in `mail.skip_senders` (e.g. your own university). |
 | `scripts/md2pdf.py` | Converts a Markdown research or teaching statement into a PDF with the same letterhead. |
 | `skills/econ-job-scan` | Claude Code skill: runs the scan, rates each new posting against your `profile`, checks visa rules, writes the Leads sheet. |
@@ -62,8 +62,9 @@ In `config.json` set:
 5. **Nothing to log by hand.** Every evening the mail check records the Submitted date when a
    confirmation email arrives, and marks a writer Received in the tracker when a system says their
    letter came in. The writers' list shows your status and the date you applied.
-6. Share the writers' list once: the Excel file's view-only link, or the Google Sheet (as
-   Editor) if you set it up. It refreshes after every tracker update.
+6. Share the writers' list once, with edit access: the Excel file's link (Dropbox/OneDrive "can
+   edit"), or the Google Sheet if you set it up. Writers mark Sent / Waiting and add comments;
+   it refreshes after every tracker update and keeps what they typed.
 
 ## Cover letters
 
@@ -145,7 +146,7 @@ Statements: `python3 scripts/md2pdf.py research_statement.md "Research Statement
 
 ## Google Sheet for letter writers (optional)
 
-Skip this section if a read-only Excel file is enough. With it, writers get a Google Sheet link
+Skip this section if the shared Excel file is enough (it is editable in the same way). With it, writers get a Google Sheet link
 where each of them marks their status (Sent / Waiting) and writes in their Comments column, and
 you write in yours.
 
@@ -213,8 +214,8 @@ To turn it off, empty `letter_share_gsheet`. Claude can walk you through the set
 
 - 只分享这份清单，追踪表始终是你自己的，不给任何人。
 - 列：需要推荐信的岗位（按截止日期排序）、工作类型（Type）、截止日期、从哪交、广告链接、你的进展（Status）、你哪天提交的（I Applied On）；然后每位老师一列 Sent / Waiting，最后是你和每位老师的 Comments。
-- 默认：生成一个只读 Excel，放在共享网盘里，链接分享一次就行，每次更新追踪表后自动刷新。
-- **可选：Google Sheet。** 老师可以在里面自己标 Sent / Waiting、写 Comments，你也可以写自己的 Comments。这些内容每次刷新都保留，并且跟着对应岗位走；其他列每次按追踪表重写，行按截止日期重新排序。Excel 照样生成作备份；Google 连不上时表格不动，其他更新照常。
+- 默认：生成一个 Excel，放在共享网盘里，用"可编辑"权限分享一次链接。只有老师状态（Sent / Waiting）和 Comments 几列能改，其他列锁定；老师填的内容每次刷新都会读回来保留。邮件确认某位老师的信已收到时，那一栏自动变成 Received。有人 10 分钟内刚改过文件时，这次刷新会跳过，避免冲突；Dropbox 万一生成"冲突副本"，里面填的内容也会自动合并回来。
+- **可选：Google Sheet**（不想用可以不设）。老师同样可以在里面自己标 Sent / Waiting、写 Comments，你也可以写自己的 Comments。这些内容每次刷新都保留，并且跟着对应岗位走；其他列每次按追踪表重写，行按截止日期重新排序。Excel 照样生成作备份；Google 连不上时表格不动，其他更新照常。
   - 设置（一次，约 10 分钟）：在 Google Cloud 建项目、启用 Google Sheets API、建 service account 并下载 JSON 密钥，放到 `google_credentials` 指的位置；在自己的 Google Drive 新建空表，共享给密钥里的 `client_email`（编辑者）；把表格链接填进 `letter_share_gsheet`，`pip3 install gspread`；运行一次 `export_letter_list.py`，再把表以"编辑者"权限分享给老师。也可以直接跟 Claude 说"设置 Google Sheet"，它会一步步带你做。不用的话 `letter_share_gsheet` 留空即可。
 - 你的追踪表里另有每位老师一列，由每晚查邮件根据"信已收到"的邮件标 Received，只有你自己看得到。
 
