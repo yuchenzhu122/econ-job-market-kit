@@ -6,7 +6,7 @@ description: Check the user's Apple Mail for job application confirmations and r
 # Daily mail check
 
 Find the repo with `readlink -f ~/.claude/skills/econ-mail-check` (go up two levels).
-S = `<repo>/scripts`. Settings: `config.json` → `mail` (account, mailbox, days, skip_senders).
+S = `<repo>/scripts`. Settings: `config.json` → `mail` (account, mailboxes such as Inbox, Clutter and Junk Email, days, skip_senders).
 
 ## Commands (use only these, with absolute paths and no `cd`)
 

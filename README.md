@@ -48,7 +48,7 @@ In `config.json` set:
   Sheet;
 - `cover_letter`: your own paragraphs for both templates (see Cover letters);
 - `profile` and `scan`: fields, what you want in order of priority, work authorization, filters;
-- `mail`: the Mail account and mailbox to read, how many days back, and `skip_senders`.
+- `mail`: the Mail account and the mailboxes to read (e.g. Inbox, Clutter, Junk Email), how many days back, and `skip_senders`.
 
 ## Daily use
 
