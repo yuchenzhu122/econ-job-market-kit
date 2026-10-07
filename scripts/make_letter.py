@@ -32,6 +32,7 @@ def main():
     ap.add_argument("--variant", choices=list(ORDER), default="research")
     ap.add_argument("--fit", default="")
     ap.add_argument("--address", default="")
+    ap.add_argument("--tag", default="", help="added to the file name when one employer has several letters")
     a = ap.parse_args()
     cfg = load_config()
 
@@ -66,7 +67,7 @@ Sincerely,\\[4pt]
 
     out_dir = jm_path(cfg, cfg["cover_letter_dir"])
     os.makedirs(out_dir, exist_ok=True)
-    stem = "CL_" + re.sub(r"[^A-Za-z0-9]+", "_", a.employer).strip("_")
+    stem = "CL_" + re.sub(r"[^A-Za-z0-9]+", "_", a.employer + (" " + a.tag if a.tag else "")).strip("_")
     with open(os.path.join(out_dir, stem + ".tex"), "w", encoding="utf-8") as f:
         f.write(tex)
     print(run_pdflatex(out_dir, stem))
