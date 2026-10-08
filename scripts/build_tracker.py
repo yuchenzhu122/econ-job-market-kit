@@ -72,6 +72,7 @@ cols = [  # header, width, kind, note
     ("Apply Via", 18, "in", "Where you submit (letter writers also upload here)"),
     ("Link", 24, "link", None),
     ("Deadline", 12, "date", None),
+    ("Letters Due", 12, "date", "When letters should be in, usually when review begins (shown to writers as Due). Blank = same as Deadline."),
     ("Days Left", 9, "auto", "Automatic. Red = 7 days or less. Disappears once Status is Submitted."),
     ("Status", 13, "in", None),
     ("Submitted", 12, "date", "Date you submitted. Type it yourself, or let the optional mail check fill it from confirmation emails."),
@@ -105,6 +106,7 @@ for w in WRITERS:
 d = DataValidation(type="date", operator="greaterThan", formula1="DATE(2026,1,1)", allow_blank=True)
 d.error = "Enter a date, e.g. 11/15/2026."; tr.add_data_validation(d); d.add(f"{C['Deadline']}{FIRST}:{C['Deadline']}{LAST}")
 d.add(f"{C['Submitted']}{FIRST}:{C['Submitted']}{LAST}")
+d.add(f"{C['Letters Due']}{FIRST}:{C['Letters Due']}{LAST}")
 
 E, DL, ST, LT, SD = C["Employer"], C["Deadline"], C["Status"], C["Letters?"], C["_sort"]
 for r in range(FIRST, LAST + 1):

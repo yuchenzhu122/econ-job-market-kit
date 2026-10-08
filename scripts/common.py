@@ -126,15 +126,21 @@ def tracker_headers(ws):
 
 def ensure_submitted_column(ws):
     """Add a 'Submitted' date column at the right edge of an older Tracker sheet. Returns its index."""
+    return ensure_date_column(ws, "Submitted")
+
+
+def ensure_date_column(ws, name):
+    """Add a date column (e.g. 'Submitted', 'Letters Due') at the right edge of an older Tracker
+    sheet if it is missing. Returns its index."""
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter as L
     from openpyxl.worksheet.datavalidation import DataValidation
     H = tracker_headers(ws)
-    if "Submitted" in H:
-        return H["Submitted"]
+    if name in H:
+        return H[name]
     col = max(H.values()) + 1
     src = ws.cell(row=4, column=H["Deadline"])
-    c = ws.cell(row=4, column=col, value="Submitted")
+    c = ws.cell(row=4, column=col, value=name)
     c.font = Font(name=src.font.name, size=src.font.sz, bold=True, color=src.font.color.rgb if src.font.color else None)
     c.fill = PatternFill("solid", fgColor=src.fill.fgColor.rgb)
     c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
