@@ -31,7 +31,14 @@
 - 科技公司常常面到一半岗位就没了（headcount 变动），有人估计一到两成。所以要多投，并且分批投，每批集中准备。（B，Rose Tan）
 - **NABE（National Association for Business Economics）有两个渠道**：
   - 招聘板 [EconJobs (econjobs.nabe.com)](https://econjobs.nabe.com/jobs/)：2026-10-08 查看时有 38 个职位，包括 Cornerstone Research Associate、Analysis Group "Associate – Generalist (PhD) (2027 Start Date)"、Keystone Economist、Amazon 的 Economist I/II（RFCA、Structural、FMF）、QuantCo Quantitative Researcher、Revelio Labs Economist。注册免费求职者账号后可以按搜索条件订"Job Alerts"邮件。网站有人机验证，脚本读不了，只能用提醒邮件和浏览器。（A，NABE 网站）
-  - **NABE Tech Economics Conference（TEC）**：2026 年 11 月 1–3 日在 San Diego，有面向科技公司等雇主的 Industry Job Fair。学生现场票 100 美元起、线上 50 美元起，优惠价截至 10 月 28 日午夜。2026 年 Job Market Poster Session 的申请已于 8 月 26 日截止。Job Fair 具体怎么投简历，页面没写，要问 NABE。往年讲者有 Amazon、Meta、Google、Microsoft、Indeed，2026 年的雇主名单我没找到。（A，[TEC2026](https://nabe.com/TEC2026)）
+  - **NABE Tech Economics Conference（TEC）**：2026 年 11 月 1–3 日在 San Diego，有面向科技公司等雇主的 Industry Job Fair。学生现场票 100 美元起、线上 50 美元起（另有说法是学生可免费注册，以官网为准），优惠价截至 10 月 28 日午夜。Job Fair 的简历提交：8 月 10 日开放，9 月 9 日前提交进第一批发给雇主，10 月 4 日是会前最后截止，只有注册参会者能提交。2026 年 Job Market Poster Session 的申请已于 8 月 26 日截止。往年讲者有 Amazon、Meta、Google、Microsoft、Indeed，2026 年的雇主名单我没找到。（A，[TEC2026](https://nabe.com/TEC2026)、[Econ Careers Week](https://nabe.com/NABE/Events/2026-Econ-Careers-Week/ECW2026.aspx)）
+- **NABE Econ Careers Week（录播）**：免费注册后可以看三场录播：① "From Application to Offer: Navigating the 2026–27 PhD Job Market"（Analysis Group 招聘经理、克利夫兰联储人才专员、Google 的 Staff Data Scientist / Econ TL，Revelio Labs 首席经济学家主持），讲申请材料、面试准备、评估 offer、学术和业界怎么并行；② NABE 薪资调查；③ "Industry, Consulting, Government, or Academia?"（Reddit、GWU、NERA 总裁、美联储理事会）讲各行业看重的技能。看完值得把要点记进 13-advice 或本文件。（A，同上）
+- **NABE EconJobs 的 Career Advice**（econjobs.nabe.com/career-advice）：多为 TopResume 等提供的通用文章，偏会计和金融，但简历部分对业界有用：
+  - 招聘者初筛一份简历大约只看 6 秒，简历上方三分之一要让人一眼看懂你是谁、要什么岗位、怎么联系你。
+  - 名字后面可以加对岗位有价值的学位（如 "Ph.D."）；联系方式写手机、专门求职用的邮箱、城市，以及 LinkedIn 链接，不必写完整住址。
+  - 顶部写一个"职业标题"，明确目标岗位（比如 "Economist | Causal Inference · Forecasting"），后面跟 3–5 行的 summary：为什么胜任、凭什么、带来过什么价值。
+  - 初筛常由申请系统（ATS）做，要有一块和职位描述用词一致的核心技能区；不要把信息放进 Word 的页眉里，ATS 会读乱。
+  （B/C，[How to Pass the 6-Second Resume Test](https://econjobs.nabe.com/career-advice/how-to-pass-the-6-second-resume-test/162/)；作者是职业顾问，不是经济学招聘方，和第 3 节的 econ 专门建议冲突时以第 3 节为准）
 - AEA 建议学术雇主让 offer 至少开放到 1 月 31 日，并给至少两周考虑。业界不受这个约束，**业界 offer 的期限常常更短，要提前想好怎么和学术 offer 的时间协调。**（A，AEA guidance）
 
 ## 3. 简历与材料（业界）

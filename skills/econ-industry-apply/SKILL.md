@@ -33,7 +33,7 @@ and `jd.md`.
 1. **Find or add the row** in the industry tracker (sheet Tracker, headers row 4). If the job
    is not there, check the academic tracker too (`leads.find_existing`); if it is in neither,
    add a row (Employer, Position, Link, Status Not started) with openpyxl (never `data_only=True`).
-2. **Analyze.** Read the posting (WebFetch; Claude in Chrome or ask the user to paste it if
+2. **Analyze** (one company, one role: everything below is written for this posting only). Read the posting (WebFetch; NABE pages in the built-in browser; Claude in Chrome or ask the user to paste it if
    it needs a login) and save it as `_build/<id>/jd.md` (id is printed by make_resume.py:
    `<employer>-<role>` lowercased, hyphens). Fill empty cells only: Category, Level, Type,
    Location, Source, Apply Via, Req ID, Deadline (only if stated), Visa (Sponsors / No
@@ -41,9 +41,12 @@ and `jd.md`.
    recommendation letters), Still Need (materials beyond resume and cover letter). Give a
    Verdict: pursue / gap (a real barrier: required experience or skill the user lacks, a
    sponsorship or clearance problem) / skip. Read `13-advice.md`, `14-employers.md`,
-   `15-market-wisdom.md` for anything about this employer or role type. Tell the user the verdict
+   `15-market-wisdom.md` (including its NABE notes) for anything about this employer or role type,
+   and the employer's own pages on the team or practice (what it works on, recent cases or
+   products) for the cover letter's "why them". Tell the user the verdict
    and the 2–3 things the posting cares most about; on gap / skip ask before going on.
-3. **Resume.** Write `_build/<id>/sections/objective.tex` (two lines at most, from
+3. **Resume** (follow `resume_guide.md`). Write `_build/<id>/sections/objective.tex` (a title
+   line naming the target role, then two lines at most, from
    `08-summaries.md`, worded toward this job) and `_build/<id>/sections/skills.tex` (only words in
    `06-skills.md`, never the do-not-claim list; order and wording mirror the posting). Override
    other sections (e.g. reorder bullets in `research.tex`) only when it clearly helps, using bullets
