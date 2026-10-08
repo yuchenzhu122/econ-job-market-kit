@@ -3,17 +3,23 @@
   python3 scripts/leads.py add <evaluated.json>   add evaluated postings to the top of the Leads sheet
   python3 scripts/leads.py promote                 copy Leads rows with Decision = Add into Tracker
   python3 scripts/leads.py sort                    re-sort existing Leads rows, newest Found date first
+Add --industry to work on the industry tracker instead of the academic one.
+
+Before a posting is written to Leads (or promoted), every tracker is checked for the same job (same
+link, or same employer and a near-identical title). A job already in a Tracker sheet is not added
+again; one only in the other tracker's Leads is added with a flag.
 
 evaluated.json is a list of objects with keys:
-  id, url, source, employer, position, track, type, location, deadline (YYYY-MM-DD or ""),
+  id, url, source, employer, position, track (industry: category), type, location, deadline (YYYY-MM-DD or ""),
   fit (High | Medium | Low), why, flags (string or list), also_at (optional list of other links)
 deadline may also be text like "Review begins 2026-10-30": the date is used and the text kept in Flags.
 
-Leads columns: Found, Fit, Employer, Position, Track, Type, Location, Deadline, Why, Flags,
+Leads columns: Found, Fit, Employer, Position, Track (industry: Category), Type, Location, Deadline, Why, Flags,
 Source, Link, Decision (Add / Maybe / Pass; "Added" once promoted).
 """
 import datetime as dt
 import json
+import os
 import re
 import sys
 from copy import copy
@@ -24,7 +30,8 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter as L
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from common import close_in_excel, ensure_date_column, jm_path, load_config, reopen_in_excel, restore_dropdowns
+from common import (close_in_excel, ensure_date_column, jm_path, load_config, norm_link, reopen_in_excel,
+                    restore_dropdowns, tracker_path, trackers)
 
 COLS = [("Found", 11), ("Fit", 8), ("Employer", 26), ("Position", 30), ("Track", 12), ("Type", 15),
         ("Location", 16), ("Deadline", 11), ("Why", 44), ("Flags", 26), ("Source", 7), ("Link", 22),
@@ -35,16 +42,21 @@ BD = Border(left=side, right=side, top=side, bottom=side)
 FIT_ORDER = {"High": 0, "Medium": 1, "Low": 2}
 
 
-def ensure_sheet(wb, accent):
+def cols(kind):
+    return [("Category", w) if h == "Track" and kind == "industry" else (h, w) for h, w in COLS]
+
+
+def ensure_sheet(wb, accent, kind="academic"):
     if "Leads" in wb.sheetnames:
         return wb["Leads"]
     ws = wb.create_sheet("Leads", 2)
-    ws["A1"] = "Leads · found automatically on JOE, EconJobMarket, Chronicle and Inside Higher Ed"
+    ws["A1"] = ("Leads · found in your LinkedIn / Indeed job alerts and on company career pages" if kind == "industry"
+                else "Leads · found automatically on JOE, EconJobMarket, Chronicle and Inside Higher Ed")
     ws["A1"].font = Font(name=FONT, size=15, bold=True, color=accent)
     ws["A2"] = ("Pick a Decision for each row: Add = move it to the Tracker (ask Claude 'add my leads to the "
                 "tracker'), Maybe = keep, Pass = ignore. Fit is Claude's judgment against your CV; check the Why and Flags.")
     ws["A2"].font = Font(name=FONT, size=10, italic=True, color="555555")
-    for i, (h, w) in enumerate(COLS, start=1):
+    for i, (h, w) in enumerate(cols(kind), start=1):
         c = ws.cell(row=4, column=i, value=h)
         c.font = Font(name=FONT, size=10, bold=True, color="FFFFFF")
         c.fill = PatternFill("solid", fgColor=accent)
@@ -63,6 +75,60 @@ def ensure_sheet(wb, accent):
     ws.auto_filter.ref = "A4:M2000"
     ws.sheet_view.showGridLines = False
     return ws
+
+
+# ---------------- the same job in any tracker
+
+STOP = {"the", "of", "and", "in", "for", "a", "an", "at", "to", "inc", "llc", "ltd", "co", "corp", "group",
+        "company", "university", "&", "-", "–"}
+
+
+def _words(s):
+    return [w for w in re.findall(r"[a-z0-9]+", str(s or "").lower()) if w not in STOP]
+
+
+def existing_index(cfg):
+    """Every job already in a tracker: [{kind, sheet, row, link, emp, pos}] (Tracker and Leads sheets)."""
+    out = []
+    for kind, path in trackers(cfg):
+        wb = load_workbook(path, read_only=True)
+        for sheet in ("Tracker", "Leads"):
+            if sheet not in wb.sheetnames:
+                continue
+            H = None
+            for r, vals in enumerate(wb[sheet].iter_rows(min_row=4, values_only=True), start=4):
+                if r == 4:
+                    H = {h: i for i, h in enumerate(vals) if h}
+                    continue
+                g = lambda h: vals[H[h]] if h in H and H[h] < len(vals) else None
+                emp = g("Employer")
+                if not emp or str(emp).startswith("EXAMPLE"):
+                    continue
+                also = re.findall(r"https?://[^\s,;]+", str(g("Flags") or ""))
+                out.append({"kind": kind, "sheet": sheet, "row": r, "link": norm_link(g("Link")),
+                            "also": {norm_link(u) for u in also},
+                            "emp": _words(emp), "pos": set(_words(g("Position"))), "decision": g("Decision")})
+    return out
+
+
+def find_existing(index, link, employer, position):
+    """Entries in `index` that are the same job: same link, or same employer and a near-identical title."""
+    link, emp, pos = norm_link(link), _words(employer), set(_words(position))
+    hits = []
+    for e in index:
+        if link and (e["link"] == link or link in e.get("also", ())):
+            hits.append(e)
+            continue
+        same_emp = emp and e["emp"] and (emp == e["emp"] or " ".join(emp) in " ".join(e["emp"])
+                                         or " ".join(e["emp"]) in " ".join(emp))
+        if same_emp and pos and e["pos"] and len(pos & e["pos"]) / len(pos | e["pos"]) >= 0.6:
+            hits.append(e)
+    return hits
+
+
+def where(e):
+    name = {"academic": "academic", "industry": "industry"}[e["kind"]]
+    return f"{name} {'tracker' if e['sheet'] == 'Tracker' else 'Leads'} row {e['row']}"
 
 
 def last_row(ws):
@@ -114,11 +180,27 @@ def sort_leads(cfg, path):
     print(f"sorted {last_row(ws) - 4} lead(s), newest first, in {path}")
 
 
-def add(cfg, path, items):
+def add(cfg, path, items, kind="academic"):
+    index = existing_index(cfg)
     wb = load_workbook(path)
-    ws = ensure_sheet(wb, cfg.get("accent_color", "0021A5"))
-    have = {ws.cell(row=r, column=12).value for r in range(5, ws.max_row + 1)}
-    items = [x for x in items if x.get("url") not in have]
+    ws = ensure_sheet(wb, cfg.get("accent_color", "0021A5"), kind)
+    keep, skipped = [], []
+    for x in items:
+        hits = find_existing(index, x.get("url"), x.get("employer"), x.get("position"))
+        mine = [e for e in hits if e["kind"] == kind]
+        tracked = [e for e in hits if e["kind"] != kind and e["sheet"] == "Tracker"]
+        # same job already in this tracker (same link, or same employer and title), or in the other Tracker
+        if mine or tracked:
+            skipped.append(f"{x.get('employer')} | {x.get('position')}: already in "
+                           + ", ".join(where(e) for e in (tracked or mine)))
+            continue
+        other = [e for e in hits if e["kind"] != kind]
+        if other:
+            fl = x.get("flags") or ""
+            fl = "; ".join(fl) if isinstance(fl, list) else fl
+            x["flags"] = "possibly the same job as " + ", ".join(where(e) for e in other) + ("; " + fl if fl else "")
+        keep.append(x)
+    items = keep
     first = cfg.get("scan", {}).get("priority_types", [])
     items.sort(key=lambda x: (FIT_ORDER.get(x.get("fit"), 3), x.get("type") not in first, x.get("deadline") or "9999"))
     end = last_row(ws)
@@ -140,7 +222,8 @@ def add(cfg, path, items):
             also = [s.strip() for s in re.split(r"[;,]\s*", also) if s.strip()]
         if also:
             flags = (flags + "; " if flags else "") + "also posted at " + ", ".join(also)
-        vals = [today, x.get("fit"), x.get("employer"), x.get("position"), x.get("track"), x.get("type"),
+        vals = [today, x.get("fit"), x.get("employer"), x.get("position"),
+                x.get("category") if kind == "industry" else x.get("track"), x.get("type"),
                 x.get("location"), dl, x.get("why"), flags, x.get("source"), x.get("url"), None]
         for i, v in enumerate(vals, start=1):
             c = ws.cell(row=r, column=i, value=v)
@@ -159,6 +242,8 @@ def add(cfg, path, items):
     restore_dropdowns(wb, cfg["letter_writers"])
     wb.save(path)
     print(f"added {len(items)} lead(s) to the top of {path}")
+    for s_ in skipped:
+        print("  skipped (already tracked):", s_)
 
 
 PLATFORMS = [("econjobmarket", "EconJobMarket"), ("academicjobsonline", "AcademicJobsOnline"),
@@ -166,17 +251,26 @@ PLATFORMS = [("econjobmarket", "EconJobMarket"), ("academicjobsonline", "Academi
              ("insidehighered", "Inside Higher Ed Careers"), ("usajobs", "USAJOBS")]
 
 
-def ad_texts(cfg):
+def ad_texts(cfg, kind="academic"):
     """url -> ad text from the last scan, used to guess where to apply."""
     import os
-    p = os.path.join(jm_path(cfg, os.path.dirname(cfg["tracker_file"])), "scan_new.json")
+    p = os.path.join(os.path.dirname(tracker_path(cfg, kind)), "industry_scan_new.json" if kind == "industry" else "scan_new.json")
     try:
         return {x["url"]: x.get("text", "") for x in json.load(open(p, encoding="utf-8"))["candidates"]}
     except (OSError, ValueError, KeyError):
         return {}
 
 
-def apply_via(url, text):
+IND_PLATFORMS = [("myworkdayjobs", "Workday"), ("greenhouse", "Greenhouse"), ("lever.co", "Lever"),
+                 ("ashbyhq", "Ashby"), ("icims", "iCIMS"), ("taleo", "Taleo"), ("linkedin.com", "LinkedIn Easy Apply"),
+                 ("indeed.", "Indeed")]
+SOURCES = {"LI": "LinkedIn", "IND": "Indeed", "NABE": "NABE", "JOE": "JOE"}
+
+
+def apply_via(url, text, kind="academic"):
+    if kind == "industry":
+        u = (url or "").lower()
+        return next((name for key, name in IND_PLATFORMS if key in u), "Employer website")
     t = (text or "").lower()
     for key, name in PLATFORMS[:3] + PLATFORMS[5:]:   # where the ad says to apply
         if key in t:
@@ -206,7 +300,8 @@ def sync_added(lead, tr):
     return n
 
 
-def promote(cfg, path):
+def promote(cfg, path, kind="academic"):
+    index = existing_index(cfg)
     wb = load_workbook(path)
     if "Leads" not in wb.sheetnames:
         print("No Leads sheet yet; nothing to promote.")
@@ -216,29 +311,45 @@ def promote(cfg, path):
     nxt = 5
     while tr.cell(row=nxt, column=H["Employer"]).value not in (None, ""):
         nxt += 1
-    texts = ad_texts(cfg)
+    texts = ad_texts(cfg, kind)
     moved = []
     type_map = {"Tenure-track": "Tenure-track", "Teaching-focused": "Teaching-focused",
                 "Fed / Central bank": "Fed / Central bank", "Government": "Government",
-                "Think tank / Research": "Think tank / Research"}
+                "Think tank / Research": "Think tank / Research", "Consulting": "Consulting", "Tech": "Tech",
+                "Finance": "Finance"}
     for r in range(5, lead.max_row + 1):
         if str(lead.cell(row=r, column=13).value or "").strip().lower() != "add":
             continue
         g = lambda c: lead.cell(row=r, column=c).value
+        other = [e for e in find_existing(index, g(12), g(3), g(4)) if e["kind"] != kind and e["sheet"] == "Tracker"]
+        if other:      # never put the same job in both trackers
+            lead.cell(row=r, column=13, value="Added")
+            lead.cell(row=r, column=10, value=f"already in {where(other[0])}; " + str(g(10) or ""))
+            print(f"not promoted: {g(3)} | {g(4)} is already in {where(other[0])}")
+            continue
         text = texts.get(g(12), "")
-        # academic and policy ads nearly always want letters; say No only if a full ad never mentions them
-        letters = "No" if len(text) > 1500 and not re.search(r"letter|referee|reference|recommend", text, re.I) else "Yes"
+        if kind == "industry":
+            # most industry jobs do not ask for letters; Yes only if the ad mentions recommendation letters
+            letters = "Yes" if re.search(r"letters? of (recommendation|reference)|recommendation letter|reference letter|"
+                                         r"推荐信", text + " " + str(g(10) or ""), re.I) else "No"
+        else:
+            # academic and policy ads nearly always want letters; say No only if a full ad never mentions them
+            letters = "No" if len(text) > 1500 and not re.search(r"letter|referee|reference|recommend", text, re.I) else "Yes"
         # Letters Due only when the ad says by when materials should be received; a review date alone is just the Deadline
         received = re.search(r"deadline note:[^;|]*(received|consideration|letters? by|submitted by)", str(g(10) or ""), re.I)
         deadline, due = g(8), (g(8) if received else None)
         if due and letters == "Yes" and "Letters Due" not in H:
             H["Letters Due"] = ensure_date_column(tr, "Letters Due")
         row = {"Track": g(5), "Employer": g(3), "Position": g(4), "Type": type_map.get(g(6), "Other"),
-               "Apply Via": apply_via(g(12), text), "Link": g(12), "Deadline": deadline,
+               "Apply Via": apply_via(g(12), text, kind), "Link": g(12), "Deadline": deadline,
                "Letters Due": due if letters == "Yes" else None, "Status": "Not started",
                "Cover Letter": "To write", "Letters?": letters,
                "Notes": (f"From scan ({g(2)} fit): {g(9) or ''} | {g(10) or ''} | Apply Via and Letters? "
                          f"guessed from the ad; check.").strip()}
+        if kind == "industry":
+            row.update({"Track": None, "Category": g(5), "Type": g(6) or "Other", "Location": g(7),
+                        "Source": SOURCES.get(g(11), "Company site"), "Resume": "To tailor", "Cover Letter": None,
+                        "Form Answers": "To write"})
         for h, v in row.items():
             if h in H and v not in (None, ""):
                 c = tr.cell(row=nxt, column=H[h], value=v)
@@ -263,7 +374,12 @@ def promote(cfg, path):
 
 if __name__ == "__main__":
     cfg = load_config()
-    tracker = jm_path(cfg, cfg["tracker_file"])
+    kind = "industry" if "--industry" in sys.argv else "academic"
+    sys.argv = [a for a in sys.argv if a != "--industry"]
+    tracker = tracker_path(cfg, kind)
+    if not os.path.exists(tracker):
+        raise SystemExit(f"{tracker} does not exist yet. Build it with: python3 scripts/build_tracker.py"
+                         + (" --industry" if kind == "industry" else ""))
     cmd = sys.argv[1] if len(sys.argv) >= 2 else ""
     if cmd not in ("add", "promote", "sort") or (cmd == "add" and len(sys.argv) < 3):
         print(__doc__)
@@ -271,9 +387,9 @@ if __name__ == "__main__":
     # Excel keeps showing (and may later save) its in-memory copy, so save and close it first
     was_open = close_in_excel(tracker)
     if cmd == "add":
-        add(cfg, tracker, json.load(open(sys.argv[2], encoding="utf-8")))
+        add(cfg, tracker, json.load(open(sys.argv[2], encoding="utf-8")), kind)
     elif cmd == "promote":
-        promote(cfg, tracker)
+        promote(cfg, tracker, kind)
     else:
         sort_leads(cfg, tracker)
     reopen_in_excel(tracker, was_open)

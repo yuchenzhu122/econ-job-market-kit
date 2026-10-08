@@ -5,6 +5,16 @@ description: Fill in an economics job market application tracker from posting li
 
 # Fill tracker rows from posting links
 
+## Your personal version (read first)
+
+This file is the generic method, shared on GitHub. Each user has a personal version built from
+their own My Materials: `<materials_dir>/00-knowledge-base/skills/econ-tracker-fill.md` (`materials_dir` in
+config.json). If it exists, read it before anything else; its rules (priorities, what to stress,
+wording, people's advice, exceptions) take precedence over the defaults below wherever they
+conflict, except the safety rules. When the user tells you how this skill should behave from now
+on ("以后…", "from now on…"), add it there (dated) instead of editing this file, and say so.
+If it does not exist, offer once to create it with the econ-materials skill.
+
 ## Locate things
 
 This skill lives in `<repo>/skills/econ-tracker-fill/` (usually symlinked into
@@ -12,7 +22,10 @@ This skill lives in `<repo>/skills/econ-tracker-fill/` (usually symlinked into
 and go up two levels. Read `<repo>/config.json`:
 
 - tracker = `<job_market_dir>/<tracker_file>` (expand `~`)
-- `standard_packet` = materials the user always has ready
+- `standard_packet` = materials the user always has ready (also check My Materials'
+  `materials-index.md` when `materials_dir` is set: what is indexed is ready)
+
+For rows of the industry tracker (`industry.dir`), use the econ-industry-apply skill instead.
 
 Tracker layout (built by `scripts/build_tracker.py`): sheet `Tracker`, headers in row 4,
 data from row 5. Columns: Track, Employer, Position, Type, Apply Via, Link, Deadline,

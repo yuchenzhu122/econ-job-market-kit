@@ -5,12 +5,24 @@ description: Draft a tailored academic cover letter (one page for research jobs,
 
 # Academic cover letter for one position
 
+## Your personal version (read first)
+
+This file is the generic method, shared on GitHub. Each user has a personal version built from
+their own My Materials: `<materials_dir>/00-knowledge-base/skills/econ-cover-letter.md` (`materials_dir` in
+config.json). If it exists, read it before anything else; its rules (priorities, what to stress,
+wording, people's advice, exceptions) take precedence over the defaults below wherever they
+conflict, except the safety rules. When the user tells you how this skill should behave from now
+on ("以后…", "from now on…"), add it there (dated) instead of editing this file, and say so.
+If it does not exist, offer once to create it with the econ-materials skill.
+
 ## Locate things
 
 Find the repo with `readlink -f ~/.claude/skills/econ-cover-letter` (go up two levels) and
 read `<repo>/config.json`. Tracker = `<job_market_dir>/<tracker_file>`; letters are written
 to `<job_market_dir>/<cover_letter_dir>/` by `<repo>/scripts/make_letter.py`. The shared
-paragraphs (intro, JMP, other research, teaching, closing) live in `config.json`
+paragraphs (intro, JMP, other research, teaching, closing) live in My Materials
+`00-knowledge-base/10-cover-letter-kb.md` when `materials_dir` is set (make_letter.py reads them
+there first), otherwise in `config.json`
 (`cover_letter`); only the fit paragraph is new for each letter.
 
 ## Steps
@@ -34,7 +46,10 @@ paragraphs (intro, JMP, other research, teaching, closing) live in `config.json`
      describes them; say why this kind of institution, using the user's stated preference
      for teaching-centered jobs. Answer anything the ad asks the letter to address.
    Facts about the school only from its ad and pages; facts about the user only from
-   config.json, the CV and the statements. Never invent courses taught, mentoring, service,
+   the knowledge base and masters in My Materials (CV, JMP, statements; see `materials-index.md`),
+   or config.json, the CV and the statements when My Materials is not set up. Before writing,
+   read `13-advice.md` and `14-employers.md` for notes on this school, and check that the
+   shared paragraphs still match the latest masters (e.g. JMP results); point out mismatches. Never invent courses taught, mentoring, service,
    awards, collaborations, or faculty ties; at most one faculty name, as shared interest.
 5. **Build**:
    ```bash
@@ -58,4 +73,5 @@ paragraphs (intro, JMP, other research, teaching, closing) live in `config.json`
 
 - Facts only from config.json and the user's materials; never change numbers.
 - If the posting asks for something the letter cannot cover truthfully, say so.
-- Edit the shared paragraphs in config.json only when the user asks.
+- Edit the shared paragraphs (10-cover-letter-kb.md or config.json) only when the user asks.
+- Industry cover letters are made by the econ-industry-apply skill (`make_letter.py --variant industry`).

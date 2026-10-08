@@ -14,6 +14,7 @@
   ],
   "letter_writers_sentence": "Writer One (chair), Writer Two, and Writer Three",
   "job_market_dir": "~/Dropbox/Job Market/Job Market 2026-27",
+  "materials_dir": "~/Dropbox/Job Market/My Materials",
   "tracker_file": "08_Applications/Job_Market_Application_Tracker.xlsx",
   "cover_letter_dir": "09_Cover_Letters/letters",
   "letter_share_file": "~/Dropbox/Job Market/Letter Requests (shared)/Letter_Requests.xlsx",
@@ -108,6 +109,259 @@
       "Inbox",
       "Clutter",
       "Junk Email"
+    ]
+  },
+  "industry": {
+    "_comment": "Industry search. categories: a title must contain one of the words (case-insensitive); exclude_titles drop a posting. companies: career pages read through their public job APIs. alert_mail: LinkedIn / Indeed job-alert emails in the Mail app.",
+    "dir": "~/Dropbox/Job Market/Industry 2026-27",
+    "tracker_file": "08_Applications/Industry_Application_Tracker.xlsx",
+    "wants": "<which industry roles you want, in order of priority; locations; what to exclude>",
+    "categories": {
+      "Econ / Consulting": [
+        "economist",
+        "phd economics",
+        "economic consulting",
+        "economics"
+      ],
+      "Causal / Data Science": [
+        "causal inference",
+        "experimentation",
+        "data scientist",
+        "research scientist",
+        "applied scientist"
+      ],
+      "Pricing / Marketplace": [
+        "pricing",
+        "marketplace",
+        "demand forecasting",
+        "forecasting"
+      ],
+      "Finance / Quant": [
+        "quantitative researcher",
+        "quant researcher",
+        "economic research",
+        "risk model"
+      ]
+    },
+    "exclude_titles": [
+      "senior",
+      "sr.",
+      "staff",
+      "principal",
+      "lead ",
+      "manager",
+      "director",
+      "head of",
+      "vp",
+      "vice president",
+      "intern",
+      "internship",
+      "co-op",
+      "part-time",
+      "contract",
+      "postdoc",
+      "software engineer",
+      "engineer,",
+      "data engineer",
+      "machine learning engineer",
+      " iii",
+      " iv",
+      "sales",
+      "recruit"
+    ],
+    "alert_mail": {
+      "_comment": "Create job alerts on LinkedIn and Indeed with the category keywords, sent to this Mail account. NABE EconJobs needs no alert: the scan reads its board in the browser. After the first alert arrives, check its sender is matched by a board's senders.",
+      "account": "<Mail.app account that gets the alerts>",
+      "mailboxes": [
+        "Inbox"
+      ],
+      "days": 7,
+      "boards": [
+        {
+          "name": "LinkedIn",
+          "code": "LI",
+          "senders": [
+            "jobalerts-noreply@linkedin.com",
+            "jobs-noreply@linkedin.com"
+          ],
+          "link": "linkedin\\.com/(?:comm/)?jobs/view/"
+        },
+        {
+          "name": "Indeed",
+          "code": "IND",
+          "senders": [
+            "indeed.com"
+          ],
+          "link": "indeed\\.[a-z.]+/.*[?&](?:jk|vjk)="
+        }
+      ]
+    },
+    "scan_companies": false,
+    "companies": [
+      {
+        "name": "Amazon",
+        "ats": "amazon",
+        "type": "Tech",
+        "searches": [
+          "economist",
+          "applied scientist causal",
+          "research scientist economics"
+        ]
+      },
+      {
+        "name": "Google",
+        "ats": "google",
+        "type": "Tech",
+        "searches": [
+          "economist",
+          "economics",
+          "causal inference",
+          "econometrics",
+          "pricing"
+        ]
+      },
+      {
+        "name": "Netflix",
+        "ats": "eightfold",
+        "url": "https://explore.jobs.netflix.net",
+        "domain": "netflix.com",
+        "type": "Tech",
+        "searches": [
+          "economist",
+          "data scientist",
+          "research scientist"
+        ]
+      },
+      {
+        "name": "Airbnb",
+        "ats": "greenhouse",
+        "board": "airbnb",
+        "type": "Tech"
+      },
+      {
+        "name": "Lyft",
+        "ats": "greenhouse",
+        "board": "lyft",
+        "type": "Tech"
+      },
+      {
+        "name": "Instacart",
+        "ats": "greenhouse",
+        "board": "instacart",
+        "type": "Tech"
+      },
+      {
+        "name": "DoorDash",
+        "ats": "greenhouse",
+        "board": "doordashusa",
+        "type": "Tech"
+      },
+      {
+        "name": "Stripe",
+        "ats": "greenhouse",
+        "board": "stripe",
+        "type": "Tech"
+      },
+      {
+        "name": "Robinhood",
+        "ats": "greenhouse",
+        "board": "robinhood",
+        "type": "Finance"
+      },
+      {
+        "name": "Pinterest",
+        "ats": "greenhouse",
+        "board": "pinterest",
+        "type": "Tech"
+      },
+      {
+        "name": "Coinbase",
+        "ats": "greenhouse",
+        "board": "coinbase",
+        "type": "Finance"
+      },
+      {
+        "name": "Reddit",
+        "ats": "greenhouse",
+        "board": "reddit",
+        "type": "Tech"
+      },
+      {
+        "name": "Roblox",
+        "ats": "greenhouse",
+        "board": "roblox",
+        "type": "Tech"
+      },
+      {
+        "name": "Affirm",
+        "ats": "greenhouse",
+        "board": "affirm",
+        "type": "Finance"
+      },
+      {
+        "name": "Upstart",
+        "ats": "greenhouse",
+        "board": "upstart",
+        "type": "Finance"
+      },
+      {
+        "name": "Duolingo",
+        "ats": "greenhouse",
+        "board": "duolingo",
+        "type": "Tech"
+      },
+      {
+        "name": "Spotify",
+        "ats": "lever",
+        "board": "spotify",
+        "type": "Tech"
+      },
+      {
+        "name": "OpenAI",
+        "ats": "ashby",
+        "board": "openai",
+        "type": "Tech"
+      },
+      {
+        "name": "Ramp",
+        "ats": "ashby",
+        "board": "ramp",
+        "type": "Finance"
+      },
+      {
+        "name": "Capital One",
+        "ats": "workday",
+        "url": "https://capitalone.wd12.myworkdayjobs.com/wday/cxs/capitalone/Capital_One",
+        "type": "Finance"
+      },
+      {
+        "name": "Zillow",
+        "ats": "workday",
+        "url": "https://zillow.wd5.myworkdayjobs.com/wday/cxs/zillow/Zillow_Group_External",
+        "type": "Tech"
+      },
+      {
+        "name": "Expedia",
+        "ats": "workday",
+        "url": "https://expedia.wd108.myworkdayjobs.com/wday/cxs/expedia/search",
+        "type": "Tech"
+      },
+      {
+        "name": "NERA (Marsh McLennan)",
+        "ats": "workday",
+        "url": "https://mmc.wd1.myworkdayjobs.com/wday/cxs/mmc/MMC",
+        "type": "Consulting",
+        "searches": [
+          "NERA economist",
+          "NERA associate",
+          "NERA consultant"
+        ],
+        "title_keywords": [
+          "associate",
+          "consultant",
+          "analyst"
+        ]
+      }
     ]
   }
 }

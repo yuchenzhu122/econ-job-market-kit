@@ -5,6 +5,16 @@ description: Check the user's Apple Mail for job application confirmations and r
 
 # Daily mail check
 
+## Your personal version (read first)
+
+This file is the generic method, shared on GitHub. Each user has a personal version built from
+their own My Materials: `<materials_dir>/00-knowledge-base/skills/econ-mail-check.md` (`materials_dir` in
+config.json). If it exists, read it before anything else; its rules (priorities, what to stress,
+wording, people's advice, exceptions) take precedence over the defaults below wherever they
+conflict, except the safety rules. When the user tells you how this skill should behave from now
+on ("以后…", "from now on…"), add it there (dated) instead of editing this file, and say so.
+If it does not exist, offer once to create it with the econ-materials skill.
+
 Find the repo with `readlink -f ~/.claude/skills/econ-mail-check` (go up two levels).
 S = `<repo>/scripts`. Settings: `config.json` → `mail` (account, mailboxes such as Inbox, Clutter and Junk Email, days, skip_senders).
 
@@ -28,9 +38,11 @@ ad-hoc scripts.
 2. For each email, decide whether it is:
    - **An application confirmation** for a tracker row: "thank you for applying", "your application
      has been submitted / received / is complete" from an application system (Interfolio,
-     AcademicJobsOnline, EconJobMarket, Workday, PeopleAdmin, SmartRecruiters, AP Recruit, a
+     AcademicJobsOnline, EconJobMarket, Workday, Greenhouse, Lever, PeopleAdmin, SmartRecruiters, AP Recruit, a
      university HR system). Match it to a row by employer and position. Use the email's date as
-     `submitted`: `{"row": N, "submitted": "YYYY-MM-DD"}`.
+     `submitted`: `{"row": N, "submitted": "YYYY-MM-DD"}`. `show` lists rows of both trackers
+     (academic and industry); for an industry row add `"tracker": "industry"`. Industry systems
+     (Greenhouse, Lever, Ashby, Workday, iCIMS, Taleo) send the same kind of confirmations.
    - **A letter notification**: a system saying a recommendation letter from a named writer was
      received / uploaded / completed for a row. Writer must be one of `letter_writers` in
      config.json: `{"row": N, "writer": "<Name>", "letter": "Received"}`. This marks Received in

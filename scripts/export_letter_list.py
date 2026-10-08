@@ -2,7 +2,7 @@
 
   python3 scripts/export_letter_list.py
 
-Reads the Tracker sheet, keeps rows with Letters? = Yes (skipping Withdrawn/Rejected), sorts them by deadline, and writes a
+Reads the Tracker sheet of every tracker (academic and, if set up, industry), keeps rows with Letters? = Yes (skipping Withdrawn/Rejected), sorts them by deadline, and writes a
 separate, read-only-style workbook to config["letter_share_file"] (e.g. a file in OneDrive or
 Google Drive). Share that file's link once with your letter writers; re-running this script
 overwrites the same file, so the link keeps working and always shows the latest list.
@@ -35,7 +35,7 @@ from openpyxl.styles import Protection
 from openpyxl.utils import get_column_letter as L
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from common import jm_path, load_config
+from common import jm_path, load_config, trackers
 from gsheet import WRITER_CHOICES, row_keys
 
 # colors for the Status column, same as the tracker
@@ -123,17 +123,26 @@ def export():
             for k, got in read_xlsx_status(copy, hand).items():
                 prev[k] = {**got, **prev.get(k, {})}
             print(f"NOTE: found {os.path.basename(copy)}; its entries were merged in. You can delete it.")
-    _write(cfg, src, dst, hand, prev, gsheet_ok)
+    _write(cfg, [p for _, p in trackers(cfg)] or [src], dst, hand, prev, gsheet_ok)
     remember_write(cfg, dst)
 
 
-def _write(cfg, src, dst, hand, prev, gsheet_ok):
+def _write(cfg, srcs, dst, hand, prev, gsheet_ok):
+    rows = []
+    for src in srcs:
+        rows += _tracker_rows(cfg, src, hand, prev)
+    rows.sort(key=lambda x: x["Deadline"] or dt.date(2099, 12, 31))
+    _save(cfg, rows, dst, hand, gsheet_ok)
+
+
+def _tracker_rows(cfg, src, hand, prev):
+    """Rows needing letters from one tracker, with what writers typed on the shared list (prev)."""
     ws = load_workbook(src, data_only=False)["Tracker"]
     hdr = {ws.cell(row=4, column=c).value: c for c in range(1, ws.max_column + 1) if ws.cell(row=4, column=c).value}
     need = ["Employer", "Position", "Type", "Apply Via", "Link", "Deadline", "Status", "Letters?"]
     missing = [h for h in need if h not in hdr]
     if missing:
-        raise SystemExit(f"Tracker is missing columns: {missing}")
+        raise SystemExit(f"{os.path.basename(src)} is missing columns: {missing}")
 
     rows = []
     for r in range(5, ws.max_row + 1):
@@ -160,7 +169,10 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
         rows.append({"Deadline": d, "Letters Due": due, "Submitted": sub, "Employer": emp, "Position": get("Position"), "Type": get("Type"),
                      "Apply Via": get("Apply Via"), "Link": get("Link"), "Status": status,
                      **{h: got.get(h, "") for h in hand}})
-    rows.sort(key=lambda x: x["Deadline"] or dt.date(2099, 12, 31))
+    return rows
+
+
+def _save(cfg, rows, dst, hand, gsheet_ok):
 
     FONT = "Arial"
     accent = cfg.get("accent_color", "0021A5")

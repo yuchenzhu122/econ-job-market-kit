@@ -1,23 +1,148 @@
 """Shared helpers: load config.json from the repo root and resolve paths."""
 import json
 import os
+import re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+KB = "00-knowledge-base"
+INDEX = "materials-index.md"
 
 
 def load_config():
-    path = os.path.join(ROOT, "config.json")
+    # ECON_KIT_CONFIG points at another config file (e.g. a test copy that writes to a scratch folder)
+    path = os.environ.get("ECON_KIT_CONFIG") or os.path.join(ROOT, "config.json")
     if not os.path.exists(path):
         raise SystemExit("config.json not found. Copy config.example.json to config.json and fill it in.")
     with open(path, encoding="utf-8") as f:
         cfg = json.load(f)
     cfg["job_market_dir"] = os.path.expanduser(cfg["job_market_dir"])
+    if cfg.get("materials_dir"):
+        cfg["materials_dir"] = os.path.expanduser(cfg["materials_dir"])
+    if cfg.get("industry", {}).get("dir"):
+        cfg["industry"]["dir"] = os.path.expanduser(cfg["industry"]["dir"])
     return cfg
 
 
 def jm_path(cfg, rel):
     """Absolute path inside the job market folder."""
     return os.path.join(cfg["job_market_dir"], rel)
+
+
+def industry_path(cfg, rel=""):
+    """Absolute path inside the industry folder (config "industry" -> "dir")."""
+    ind = cfg.get("industry") or {}
+    if not ind.get("dir"):
+        raise SystemExit('No industry folder set: add "industry": {"dir": ...} to config.json (see config.example.json).')
+    return os.path.join(ind["dir"], rel)
+
+
+def tracker_path(cfg, kind="academic"):
+    if kind == "industry":
+        return industry_path(cfg, cfg["industry"].get("tracker_file", "08_Applications/Industry_Application_Tracker.xlsx"))
+    return jm_path(cfg, cfg["tracker_file"])
+
+
+def trackers(cfg):
+    """[(kind, path)] for every tracker that exists: the academic one and, if set up, the industry one."""
+    out = [("academic", tracker_path(cfg))]
+    if (cfg.get("industry") or {}).get("dir"):
+        out.append(("industry", tracker_path(cfg, "industry")))
+    return [(k, p) for k, p in out if os.path.exists(p)]
+
+
+def norm_link(url):
+    """One form per posting, so the same job is recognized across boards, alerts and trackers."""
+    if not url:
+        return ""
+    u = str(url).strip()
+    m = re.search(r"linkedin\.com/(?:comm/)?jobs/view/(?:[^/?]*-)?(\d+)", u)
+    if m:
+        return "linkedin.com/jobs/view/" + m.group(1)
+    m = re.search(r"indeed\.[a-z.]+/.*[?&](?:jk|vjk)=([0-9a-f]+)", u)
+    if m:
+        return "indeed.com/viewjob?jk=" + m.group(1)
+    m = re.search(r"econjobs\.nabe\.com/job/(?:[^/?]+/)?(\d+)", u)
+    if m:
+        return "econjobs.nabe.com/job/" + m.group(1)
+    u = re.sub(r"^https?://(www\.)?", "", u)
+    u = re.sub(r"[?#].*$", "", u) if not re.search(r"[?&](JOE_ID|id|gh_jid|jobId|jk)=", u) else u
+    return u.rstrip("/").lower()
+
+
+# ---------------- My Materials: masters + knowledge base
+
+def kb_path(cfg, name=""):
+    """Path inside My Materials/00-knowledge-base (None if materials_dir is not set)."""
+    if not cfg.get("materials_dir"):
+        return None
+    return os.path.join(cfg["materials_dir"], KB, name)
+
+
+def resolve_alias(path):
+    """Follow a symlink, or a Finder alias (Python does not follow those on its own)."""
+    path = os.path.realpath(os.path.expanduser(path))
+    if os.path.isfile(path) and os.path.getsize(path) < 20000:
+        with open(path, "rb") as f:
+            head = f.read(16)
+        if head.startswith(b"book\x00\x00\x00\x00mark"):
+            import subprocess
+            r = subprocess.run(["osascript", "-e", f'tell application "Finder" to get POSIX path of '
+                                f'(original item of (POSIX file "{path}" as alias) as alias)'],
+                               capture_output=True, text=True)
+            if r.returncode == 0 and r.stdout.strip():
+                return os.path.realpath(r.stdout.strip())
+    return path
+
+
+def read_index(cfg):
+    """Rows of My Materials/00-knowledge-base/materials-index.md: [{key, source, target, note}].
+    The index is a Markdown table | Key | Source | Target folder | Note |; Source is relative to
+    My Materials (or absolute / ~); Target folder is relative to the job market folder ("" = not copied)."""
+    p = kb_path(cfg, INDEX)
+    if not p or not os.path.exists(p):
+        return []
+    rows = []
+    for line in open(p, encoding="utf-8"):
+        cells = [c.strip().strip("`") for c in line.strip().strip("|").split("|")]
+        if len(cells) < 2 or not line.lstrip().startswith("|") or set(cells[0]) <= set("-: ") or cells[0].lower() == "key":
+            continue
+        rows.append({"key": cells[0], "source": cells[1], "target": cells[2] if len(cells) > 2 else "",
+                     "note": cells[3] if len(cells) > 3 else ""})
+    return rows
+
+
+def material_path(cfg, key, must_exist=True):
+    """Absolute path of the master file registered under `key` in the materials index."""
+    for row in read_index(cfg):
+        if row["key"] == key and row["source"]:
+            src = os.path.expanduser(row["source"])
+            if not os.path.isabs(src):
+                src = os.path.join(cfg["materials_dir"], src)
+            if os.path.lexists(src):
+                return resolve_alias(src)
+            if must_exist:
+                raise SystemExit(f"'{key}' is listed in {INDEX} as {row['source']}, but that file is gone. "
+                                 "Ask Claude to 'update the materials index' (更新材料索引).")
+            return None
+    if must_exist:
+        raise SystemExit(f"No '{key}' in {INDEX}. Ask Claude to 'update the materials index' (更新材料索引).")
+    return None
+
+
+def kb_sections(cfg, name):
+    """{heading: text} for the '## heading' sections of a knowledge-base Markdown file."""
+    p = kb_path(cfg, name)
+    if not p or not os.path.exists(p):
+        return {}
+    out, cur = {}, None
+    for line in open(p, encoding="utf-8"):
+        m = re.match(r"##\s+(.+?)\s*$", line)
+        if m:
+            cur = m.group(1).strip()
+            out[cur] = ""
+        elif cur and not line.lstrip().startswith("<!--"):
+            out[cur] += line
+    return {k: v.strip() for k, v in out.items() if v.strip()}
 
 
 def tex_escape(s):
@@ -64,7 +189,10 @@ def restore_dropdowns(wb, writers):
     lists = {li.cell(row=3, column=c).value: L(c) for c in range(1, li.max_column + 1) if li.cell(row=3, column=c).value}
     H = {tr.cell(row=4, column=c).value: L(c) for c in range(1, tr.max_column + 1) if tr.cell(row=4, column=c).value}
     want = {"Track": "Track", "Type": "Type", "Apply Via": "Platform", "Status": "Status",
-            "Letters?": "Yes/No", "Cover Letter": "Cover Letter", **{w: "Letter" for w in writers}}
+            "Letters?": "Yes/No", "Cover Letter": "Cover Letter", **{w: "Letter" for w in writers},
+            # industry tracker only (missing lists are skipped)
+            "Category": "Category", "Source": "Source", "Visa": "Visa", "Verdict": "Verdict",
+            "Resume": "Resume", "Form Answers": "Form Answers"}
     last = max(154, tr.max_row)
     for head, name in want.items():
         if head not in H or name not in lists:
