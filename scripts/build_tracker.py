@@ -72,7 +72,7 @@ cols = [  # header, width, kind, note
     ("Apply Via", 18, "in", "Where you submit (letter writers also upload here)"),
     ("Link", 24, "link", None),
     ("Deadline", 12, "date", None),
-    ("Letters Due", 12, "date", "When letters should be in, usually when review begins (shown to writers as Due). Blank = same as Deadline."),
+    ("Letters Due", 12, "date", "When letters should be in, usually when review begins (also shown on the writers' list). Blank = same as Deadline."),
     ("Days Left", 9, "auto", "Automatic. Red = 7 days or less. Disappears once Status is Submitted."),
     ("Status", 13, "in", None),
     ("Submitted", 12, "date", "Date you submitted. Type it yourself, or let the optional mail check fill it from confirmation emails."),

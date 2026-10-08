@@ -41,7 +41,7 @@ a confirmation email says that writer's letter arrived; never fill or change the
      "review begins / applications reviewed starting" date, else leave blank (the writers' list
      then shows the Deadline). Older trackers may lack the column: add it first with
      `ensure_date_column(ws, "Letters Due")` from `<repo>/scripts/common.py`.
-     Rows already filled get Letters Due only when the user asks ("fill Letters Due", "补 Due"):
+     Rows already filled get Letters Due only when the user asks ("fill Letters Due", "补 Letters Due", "补 Due"):
      then re-read the links of rows with Letters? = Yes and an empty Letters Due.
    - Letters?: Yes if the ad asks for letters or references, else No.
    - Still Need: required materials NOT in `standard_packet` (e.g. diversity statement,
@@ -75,7 +75,7 @@ Rejected / Withdrawn, soonest deadline first) to `letter_share_file` (a read-onl
 and, if `letter_share_gsheet` is set, to that Google Sheet, which the writers edit. Columns:
 
 - From the tracker, rewritten on every refresh: #, Deadline, Employer, Position, Type, Submit
-  Letter Via, Link, Status, I Applied On, Due (Letters Due, or Deadline if blank). To change these, change the tracker, not the sheet.
+  Letter Via, Link, Status, I Applied On, Letters Due (from the tracker, or Deadline if blank). To change these, change the tracker, not the sheet.
 - Filled by hand, read back and kept on every refresh (matched by Link, else Employer +
   Position): one status column per writer (Sent / Waiting, filled by the writers), then
   "<user's first name> Comments" and "<writer> Comments" for each writer. Never write into these

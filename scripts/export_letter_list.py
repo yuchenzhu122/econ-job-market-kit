@@ -8,7 +8,7 @@ Google Drive). Share that file's link once with your letter writers; re-running 
 overwrites the same file, so the link keeps working and always shows the latest list.
 Only the columns writers need are copied (deadline, type of job, where to submit, link, your
 status, the date you applied, and when letters are due), plus one column per writer; notes stay private.
-Due is the tracker's Letters Due, or the Deadline when that is blank.
+Letters Due comes from the tracker's Letters Due column, or the Deadline when that is blank.
 
 After those come the hand-filled columns: each writer's status (Sent / Waiting), then the comments,
 "<your first name> Comments" and "<writer> Comments" for each writer, filled in by hand in the
@@ -156,7 +156,7 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
         for w in cfg["letter_writers"]:       # the mail check confirmed this letter: show it to everyone
             if w in hdr and str(get(w) or "").strip() in ("Received", "Uploaded"):
                 got[w] = "Received"
-        rows.append({"Deadline": d, "Due": due, "Submitted": sub, "Employer": emp, "Position": get("Position"), "Type": get("Type"),
+        rows.append({"Deadline": d, "Letters Due": due, "Submitted": sub, "Employer": emp, "Position": get("Position"), "Type": get("Type"),
                      "Apply Via": get("Apply Via"), "Link": get("Link"), "Status": status,
                      **{h: got.get(h, "") for h in hand}})
     rows.sort(key=lambda x: x["Deadline"] or dt.date(2099, 12, 31))
@@ -177,7 +177,7 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
     sh["A1"].font = Font(name=FONT, size=15, bold=True, color=accent)
     sh["A2"] = (f"Positions that need a letter, soonest deadline first. Once I submit (Status = Submitted, "
                 f"'I Applied On' filled), the application system sends each of you the upload request. "
-                f"Due is when your letter should be in (usually when review begins). "
+                f"Letters Due is when your letter should be in (usually when review begins). "
                 f"Please mark your own column Sent / Waiting; it changes to Received when the system confirms your letter. "
                 f"Comments are welcome in your Comments column; everything else is locked. Last updated "
                 f"{dt.date.today().strftime('%B %-d, %Y')}. Thank you for your support!")
@@ -185,7 +185,7 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
     # no formulas: the file is mostly viewed in a browser preview (Dropbox/OneDrive), which does not
     # recalculate them, so a "Days Left" formula would show up blank
     cols = [("#", 5), ("Deadline", 13), ("Employer", 30), ("Position", 32), ("Type", 16),
-            ("Submit Letter Via", 20), ("Link", 30), ("Status", 13), ("I Applied On", 13), ("Due", 13)]
+            ("Submit Letter Via", 20), ("Link", 30), ("Status", 13), ("I Applied On", 13), ("Letters Due", 13)]
     LINK, STATUS, DATES = 7, 8, (2, 9, 10)
     HAND = [(len(cols) + 1 + i, kind, who) for i, (_, _, kind, who) in enumerate(hand_columns(cfg))]
     cols += [(h, w) for h, w, *_ in hand_columns(cfg)]
@@ -194,7 +194,7 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
         c = sh.cell(row=4, column=i, value=h)
         c.font = fh; c.fill = PatternFill("solid", fgColor=accent); c.alignment = ctr; c.border = bd
         sh.column_dimensions[L(i)].width = w
-    table = [[k, x["Deadline"], x["Employer"], x["Position"], x["Type"], x["Apply Via"], x["Link"], x["Status"], x["Submitted"], x["Due"]]
+    table = [[k, x["Deadline"], x["Employer"], x["Position"], x["Type"], x["Apply Via"], x["Link"], x["Status"], x["Submitted"], x["Letters Due"]]
              + [x[h] for h in hand] for k, x in enumerate(rows, start=1)]
     for k, (x, vals) in enumerate(zip(rows, table), start=1):
         r = 4 + k
