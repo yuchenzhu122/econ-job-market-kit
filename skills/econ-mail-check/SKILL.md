@@ -23,7 +23,8 @@ ad-hoc scripts.
 
 ## Steps
 
-1. `fetch`, then `show`.
+1. `fetch`, then `show`. The mail check is optional: if `fetch` says it is not set up (no `mail`
+   account in config.json), tell the user in one line and stop; they fill in Submitted by hand.
 2. For each email, decide whether it is:
    - **An application confirmation** for a tracker row: "thank you for applying", "your application
      has been submitted / received / is complete" from an application system (Interfolio,

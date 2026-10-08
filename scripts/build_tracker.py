@@ -74,11 +74,11 @@ cols = [  # header, width, kind, note
     ("Deadline", 12, "date", None),
     ("Days Left", 9, "auto", "Automatic. Red = 7 days or less. Disappears once Status is Submitted."),
     ("Status", 13, "in", None),
-    ("Submitted", 12, "date", "Date you submitted. Filled automatically from confirmation emails (mail_scan.py)."),
+    ("Submitted", 12, "date", "Date you submitted. Type it yourself, or let the optional mail check fill it from confirmation emails."),
     ("Still Need", 26, "in", "Type what's missing, e.g. 'cover letter, teaching evals'. Leave blank when everything is ready."),
     ("Cover Letter", 11, "in", "To write / Drafted / Final / Not needed. Ask Claude: 'write the cover letter for <Employer>' and it updates this cell. Files are in 09_Cover_Letters."),
     ("Letters?", 9, "in", "Yes = this job needs recommendation letters (it will show up on the letter writers' list)."),
-] + [(w, 12, "letter", "Filled by the mail check: Received once the application system confirms this writer's letter arrived.")
+] + [(w, 12, "letter", "Received once this writer's letter has arrived. Set it yourself, or let the optional mail check fill it.")
      for w in WRITERS] + [
     ("Notes", 34, "in", "Anything else: interview dates, contacts, what to stress in the cover letter."),
     ("_sort", 6, "auto", None), ("_order", 6, "auto", None),
@@ -104,6 +104,7 @@ for w in WRITERS:
     dv("Letter", C[w])
 d = DataValidation(type="date", operator="greaterThan", formula1="DATE(2026,1,1)", allow_blank=True)
 d.error = "Enter a date, e.g. 11/15/2026."; tr.add_data_validation(d); d.add(f"{C['Deadline']}{FIRST}:{C['Deadline']}{LAST}")
+d.add(f"{C['Submitted']}{FIRST}:{C['Submitted']}{LAST}")
 
 E, DL, ST, LT, SD = C["Employer"], C["Deadline"], C["Status"], C["Letters?"], C["_sort"]
 for r in range(FIRST, LAST + 1):
@@ -237,8 +238,8 @@ steps = [
     ("1  Find a job", "Fastest: paste just the posting URL into the Link column, then ask Claude '补全追踪表' (fill the tracker) — it reads each link and fills the rest. Or fill the row yourself: Track, Employer, Position, Apply Via, Link, Deadline, Status, Letters?."),
     ("2  Missing stuff", "Type it in 'Still Need' (e.g. 'teaching evals'). Clear it when ready."),
     ("   Cover letter", "Ask Claude: 'write the cover letter for <Employer>'. It drafts a tailored letter into 09_Cover_Letters and sets the Cover Letter column to Drafted."),
-    ("3  Letters", "Set Letters? = Yes. When you submit, the application system invites all your writers; they mark Sent / Waiting on the shared Letter Requests list. The columns under their names here fill in when a confirmation email says their letter was received."),
-    ("4  Submitted", "Change Status to Submitted. The countdown disappears."),
+    ("3  Letters", "Set Letters? = Yes. When you submit, the application system invites all your writers; they mark Sent / Waiting on the shared Letter Requests list. Under their names here, pick Received once their letter has arrived (or let the optional mail check do it from confirmation emails)."),
+    ("4  Submitted", "Change Status to Submitted and type the date in Submitted, then click ▶ Update Tracker to refresh the writers' list. The countdown disappears. (Optional: the mail check does this from confirmation emails.)"),
     ("Watch", "Days Left turns yellow at 14 days and red at 7 days."),
     ("Share", "This tracker is private. Writers get only the Letter Requests list (Google Sheet, Excel backup) made by export_letter_list.py; it refreshes after every update."),
     ("Start", "Delete the two grey EXAMPLE rows on Tracker."),
