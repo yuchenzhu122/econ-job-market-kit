@@ -1,7 +1,8 @@
 """Manage the Leads sheet of the tracker.
 
-  python3 scripts/leads.py add <evaluated.json>   append evaluated postings to the Leads sheet
+  python3 scripts/leads.py add <evaluated.json>   add evaluated postings to the top of the Leads sheet
   python3 scripts/leads.py promote                 copy Leads rows with Decision = Add into Tracker
+  python3 scripts/leads.py sort                    re-sort existing Leads rows, newest Found date first
 
 evaluated.json is a list of objects with keys:
   id, url, source, employer, position, track, type, location, deadline (YYYY-MM-DD or ""),
@@ -15,6 +16,7 @@ import datetime as dt
 import json
 import re
 import sys
+from copy import copy
 
 from openpyxl import load_workbook
 from openpyxl.formatting.rule import FormulaRule
@@ -22,7 +24,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter as L
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from common import jm_path, load_config, restore_dropdowns
+from common import close_in_excel, jm_path, load_config, reopen_in_excel, restore_dropdowns
 
 COLS = [("Found", 11), ("Fit", 8), ("Employer", 26), ("Position", 30), ("Track", 12), ("Type", 15),
         ("Location", 16), ("Deadline", 11), ("Why", 44), ("Flags", 26), ("Source", 7), ("Link", 22),
@@ -63,6 +65,55 @@ def ensure_sheet(wb, accent):
     return ws
 
 
+def last_row(ws):
+    r = ws.max_row
+    while r >= 5 and all(ws.cell(row=r, column=c).value in (None, "") for c in range(1, len(COLS) + 1)):
+        r -= 1
+    return r
+
+
+def snapshot(ws, start, end):
+    """Rows start..end as lists of (value, style, hyperlink target), one per Leads column."""
+    rows = []
+    for r in range(start, end + 1):
+        row = []
+        for c in range(1, len(COLS) + 1):
+            cell = ws.cell(row=r, column=c)
+            row.append((cell.value, copy(cell._style), cell.hyperlink.target if cell.hyperlink else None))
+        rows.append(row)
+    return rows
+
+
+def found_key(row):
+    v = row[0][0]
+    if isinstance(v, dt.datetime):
+        v = v.date()
+    return v.toordinal() if isinstance(v, dt.date) else 0
+
+
+def write_sorted(ws, rows):
+    """Write rows back from row 5, newest Found date first (stable within a date)."""
+    rows = sorted(rows, key=found_key, reverse=True)
+    for r, row in enumerate(rows, start=5):
+        for c, (v, style, link) in enumerate(row, start=1):
+            cell = ws.cell(row=r, column=c)
+            cell.value = v           # ws.cell(value=None) would leave the old value in place
+            cell._style = copy(style)
+            cell.hyperlink = link
+
+
+def sort_leads(cfg, path):
+    wb = load_workbook(path)
+    if "Leads" not in wb.sheetnames:
+        print("No Leads sheet yet; nothing to sort.")
+        return
+    ws = wb["Leads"]
+    write_sorted(ws, snapshot(ws, 5, last_row(ws)))
+    restore_dropdowns(wb, cfg["letter_writers"])
+    wb.save(path)
+    print(f"sorted {last_row(ws) - 4} lead(s), newest first, in {path}")
+
+
 def add(cfg, path, items):
     wb = load_workbook(path)
     ws = ensure_sheet(wb, cfg.get("accent_color", "0021A5"))
@@ -70,9 +121,9 @@ def add(cfg, path, items):
     items = [x for x in items if x.get("url") not in have]
     first = cfg.get("scan", {}).get("priority_types", [])
     items.sort(key=lambda x: (FIT_ORDER.get(x.get("fit"), 3), x.get("type") not in first, x.get("deadline") or "9999"))
-    r = max(5, ws.max_row + 1)
-    while r > 5 and ws.cell(row=r - 1, column=3).value in (None, ""):
-        r -= 1
+    end = last_row(ws)
+    old = snapshot(ws, 5, end)
+    r = end + 1          # new rows are written below, then everything is re-sorted newest first
     today = dt.date.today()
     for x in items:
         dl = None
@@ -84,8 +135,11 @@ def add(cfg, path, items):
             dl = dt.date.fromisoformat(m.group(0)) if m else None
             if not m or m.group(0) != str(x["deadline"]).strip():   # e.g. "Review begins 2026-10-30"
                 flags = (flags + "; " if flags else "") + "deadline note: " + str(x["deadline"])
-        if x.get("also_at"):
-            flags = (flags + "; " if flags else "") + "also posted at " + ", ".join(x["also_at"])
+        also = x.get("also_at") or []
+        if isinstance(also, str):      # a single link or "a; b" string, not a list
+            also = [s.strip() for s in re.split(r"[;,]\s*", also) if s.strip()]
+        if also:
+            flags = (flags + "; " if flags else "") + "also posted at " + ", ".join(also)
         vals = [today, x.get("fit"), x.get("employer"), x.get("position"), x.get("track"), x.get("type"),
                 x.get("location"), dl, x.get("why"), flags, x.get("source"), x.get("url"), None]
         for i, v in enumerate(vals, start=1):
@@ -100,9 +154,11 @@ def add(cfg, path, items):
             ws.cell(row=r, column=12).hyperlink = x["url"]
             ws.cell(row=r, column=12).font = Font(name=FONT, size=10, color="0563C1", underline="single")
         r += 1
+    new = snapshot(ws, end + 1, r - 1)
+    write_sorted(ws, new + old)
     restore_dropdowns(wb, cfg["letter_writers"])
     wb.save(path)
-    print(f"added {len(items)} lead(s) to {path}")
+    print(f"added {len(items)} lead(s) to the top of {path}")
 
 
 PLATFORMS = [("econjobmarket", "EconJobMarket"), ("academicjobsonline", "AcademicJobsOnline"),
@@ -199,9 +255,16 @@ def promote(cfg, path):
 if __name__ == "__main__":
     cfg = load_config()
     tracker = jm_path(cfg, cfg["tracker_file"])
-    if len(sys.argv) >= 3 and sys.argv[1] == "add":
+    cmd = sys.argv[1] if len(sys.argv) >= 2 else ""
+    if cmd not in ("add", "promote", "sort") or (cmd == "add" and len(sys.argv) < 3):
+        print(__doc__)
+        sys.exit()
+    # Excel keeps showing (and may later save) its in-memory copy, so save and close it first
+    was_open = close_in_excel(tracker)
+    if cmd == "add":
         add(cfg, tracker, json.load(open(sys.argv[2], encoding="utf-8")))
-    elif len(sys.argv) >= 2 and sys.argv[1] == "promote":
+    elif cmd == "promote":
         promote(cfg, tracker)
     else:
-        print(__doc__)
+        sort_leads(cfg, tracker)
+    reopen_in_excel(tracker, was_open)
