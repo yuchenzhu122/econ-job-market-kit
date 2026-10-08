@@ -30,7 +30,7 @@ import urllib.request
 
 from openpyxl import load_workbook
 
-from common import jm_path, load_config
+from common import jm_path, load_config, norm_link, trackers
 
 UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) "
                     "Chrome/129 Safari/537.36 (econ-job-market-kit scanner)"}
@@ -277,16 +277,15 @@ def main():
     state = json.load(open(state_path)) if os.path.exists(state_path) else {"seen": []}
     seen = set() if "--all" in sys.argv else set(state["seen"])
 
-    tracked = set()
-    tracker = jm_path(cfg, cfg["tracker_file"])
-    if os.path.exists(tracker):
+    tracked = set()      # links already in any tracker (academic or industry), Tracker or Leads sheet
+    for _, tracker in trackers(cfg):
         wb = load_workbook(tracker, read_only=True)
         for name in ("Tracker", "Leads"):
             if name in wb.sheetnames:
                 for row in wb[name].iter_rows(values_only=True):
-                    for v in row:
-                        if isinstance(v, str) and v.startswith("http"):
-                            tracked.add(v.strip())
+                    for v in row:       # links anywhere in a cell, including "also posted at" in Flags
+                        if isinstance(v, str):
+                            tracked |= {norm_link(u) for u in re.findall(r"https?://[^\s,;]+", v)}
 
     today = dt.date.today().isoformat()
     posts, errors = [], []
@@ -300,7 +299,7 @@ def main():
 
     stats, new = {}, []
     for x in posts:
-        if x["id"] in seen or x["url"] in tracked:
+        if x["id"] in seen or norm_link(x["url"]) in tracked:
             stats["seen"] = stats.get("seen", 0) + 1
             continue
         ok, reason = keep(x, sc, today)

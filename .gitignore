@@ -6,3 +6,14 @@ __pycache__/
 *.out
 .DS_Store
 *service-account*.json
+
+# personal material never goes to GitHub (it lives in My Materials / Dropbox)
+My Materials/
+my_materials_local/
+**/00-knowledge-base/skills/*.md
+!templates/my_materials/00-knowledge-base/skills/_template.md
+!templates/my_materials/00-knowledge-base/skills/README.md
+*.personal.md
+nabe_jobs.json
+industry_*.json
+scan_*.json

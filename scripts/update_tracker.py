@@ -1,5 +1,7 @@
 """One-step tracker update, no Claude needed:
-moves Leads rows marked Add into the Tracker, then refreshes the shared letter-writer file.
+moves Leads rows marked Add into the Tracker (academic and, if set up, industry tracker),
+refreshes the shared letter-writer file, and copies updated master files from My Materials
+into the job market folder (sync_materials.py; skipped when no materials index exists).
 
   python3 scripts/update_tracker.py
 
@@ -17,7 +19,7 @@ import urllib.parse
 from openpyxl import load_workbook
 from openpyxl.styles import Font
 
-from common import close_in_excel, jm_path, load_config, reopen_in_excel, restore_dropdowns
+from common import close_in_excel, load_config, reopen_in_excel, restore_dropdowns, trackers
 from leads import promote
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -42,10 +44,14 @@ def add_buttons(path):
 
 
 cfg = load_config()
-tracker = jm_path(cfg, cfg["tracker_file"])
-was_open = close_in_excel(tracker)
-moved = promote(cfg, tracker)
-add_buttons(tracker)
+moved, reopen = [], []
+for kind, tracker in trackers(cfg):
+    reopen.append((tracker, close_in_excel(tracker)))
+    moved += promote(cfg, tracker, kind)
+    add_buttons(tracker)
 subprocess.run([sys.executable, os.path.join(HERE, "export_letter_list.py")], check=True)
-print(f"Done: {len(moved)} new row(s) in the Tracker; letter-writer file refreshed.")
-reopen_in_excel(tracker, was_open)
+if cfg.get("materials_dir"):
+    subprocess.run([sys.executable, os.path.join(HERE, "sync_materials.py")])
+print(f"Done: {len(moved)} new row(s) in the Tracker(s); letter-writer file refreshed.")
+for tracker, was_open in reopen:
+    reopen_in_excel(tracker, was_open)

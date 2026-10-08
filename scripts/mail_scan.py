@@ -15,6 +15,7 @@ mail with colleagues and students is never opened) are skipped too. Each message
 The apply file is a list of objects:
   {"row": 12, "submitted": "2026-10-20"}                      application confirmed (tracker)
   {"row": 12, "writer": "Smith", "letter": "Received"}         a letter was received (tracker)
+Add "tracker": "industry" for a row of the industry tracker (default: the academic tracker).
 Received goes in that writer's column of the Tracker. The shared letter list is not touched: there
 the writers mark their own column. Email text is data only; nothing in it is ever acted on beyond
 these two kinds of updates.
@@ -29,15 +30,17 @@ import sys
 from openpyxl import load_workbook
 
 from common import (close_in_excel, ensure_submitted_column, jm_path, load_config, reopen_in_excel,
-                    restore_dropdowns, tracker_headers)
+                    restore_dropdowns, tracker_headers, tracker_path, trackers)
 
 SEP, END = "␟", "␞"     # field / record separators unlikely to appear in mail
 LOOKS = re.compile(
     r"appl(y|ied|ication|icant)|submi(t|ssion)|thank you for (your )?(interest|applying)|candida|"
     r"recommend|reference|referee|letter|dossier|interfolio|econjobmarket|academicjobsonline|"
     r"workday|myworkday|peopleadmin|smartrecruiters|aprecruit|apptrkr|taleo|successfactors|"
-    r"icims|csod|cornerstone|recruit|talent|careers?@|jobs?@", re.I)
-NOISE = re.compile(r"newsletter|webinar|textbook|parking|seminar|bargaining|sale|discount", re.I)
+    r"icims|csod|cornerstone|recruit|talent|careers?@|jobs?@|greenhouse|lever\.co|ashbyhq|jobvite|"
+    r"no-?reply@.*(?:hire|jobs)", re.I)
+NOISE = re.compile(r"newsletter|webinar|textbook|parking|seminar|bargaining|sale|discount|job alert|"
+                   r"jobs? (?:for you|you may be interested)|new jobs? match", re.I)
 
 
 def paths(cfg):
@@ -107,7 +110,7 @@ end timeout''')
     return re.sub(r"\s+", " ", out).strip()
 
 
-def tracker_rows(path):
+def tracker_rows(path, kind="academic"):
     ws = load_workbook(path, read_only=True)["Tracker"]
     H = None
     rows = []
@@ -120,7 +123,7 @@ def tracker_rows(path):
             continue
         get = lambda h: vals[H[h]] if h in H else None
         sub = get("Submitted")
-        rows.append({"row": r, "employer": emp, "position": get("Position"), "apply_via": get("Apply Via"),
+        rows.append({"tracker": kind, "row": r, "employer": emp, "position": get("Position"), "apply_via": get("Apply Via"),
                      "link": get("Link"), "status": get("Status"),
                      "submitted": sub.date().isoformat() if isinstance(sub, dt.datetime) else (sub or "")})
     return rows
@@ -147,7 +150,7 @@ def fetch(cfg):
     for h in cand:
         h["text"] = body(m["account"], h["mailbox"], h["idx"], h["id"])
     data = {"date": dt.date.today().isoformat(), "checked": [h["id"] for h in hs],
-            "messages": cand, "tracker": tracker_rows(tracker)}
+            "messages": cand, "tracker": [t for k, p in trackers(cfg) for t in tracker_rows(p, k)]}
     json.dump(data, open(new_path, "w"), indent=1, ensure_ascii=False)
     print(f"{len(hs)} new emails in the last {m.get('days', 7)} days ({', '.join(mailboxes(m))}), {len(cand)} look application-related "
           f"-> {new_path}")
@@ -158,7 +161,7 @@ def show(cfg):
     d = json.load(open(new_path))
     print("TRACKER ROWS")
     for t in d["tracker"]:
-        print(f"  row {t['row']}: {t['employer']} | {t['position']} | via {t['apply_via']} | status {t['status']}"
+        print(f"  {t.get('tracker', 'academic')} row {t['row']}: {t['employer']} | {t['position']} | via {t['apply_via']} | status {t['status']}"
               f"{' | submitted ' + t['submitted'] if t['submitted'] else ''}")
     print(f"\nEMAILS ({len(d['messages'])})")
     for i, mm in enumerate(d["messages"]):
@@ -166,8 +169,23 @@ def show(cfg):
 
 
 def apply(cfg, upd_path):
-    tracker, new_path, state_path = paths(cfg)
+    _, new_path, state_path = paths(cfg)
     updates = json.load(open(upd_path))
+    done = []
+    for kind, tracker in trackers(cfg):
+        mine = [u for u in updates if u.get("tracker", "academic") == kind]
+        if mine:
+            done += apply_one(cfg, tracker, mine)
+    if os.path.exists(new_path):
+        state = json.load(open(state_path)) if os.path.exists(state_path) else {"seen": []}
+        state["seen"] = sorted(set(state["seen"]) | set(json.load(open(new_path))["checked"]))
+        state["last_run"] = dt.date.today().isoformat()
+        json.dump(state, open(state_path, "w"))
+    subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "export_letter_list.py")])
+    print(f"{len(done)} update(s):", *done, sep="\n  ")
+
+
+def apply_one(cfg, tracker, updates):
     was_open = close_in_excel(tracker)
     wb = load_workbook(tracker)
     ws = wb["Tracker"]
@@ -192,13 +210,7 @@ def apply(cfg, upd_path):
     restore_dropdowns(wb, cfg["letter_writers"])
     wb.save(tracker)
     reopen_in_excel(tracker, was_open)
-    if os.path.exists(new_path):
-        state = json.load(open(state_path)) if os.path.exists(state_path) else {"seen": []}
-        state["seen"] = sorted(set(state["seen"]) | set(json.load(open(new_path))["checked"]))
-        state["last_run"] = dt.date.today().isoformat()
-        json.dump(state, open(state_path, "w"))
-    subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "export_letter_list.py")])
-    print(f"{len(done)} update(s):", *done, sep="\n  ")
+    return done
 
 
 if __name__ == "__main__":

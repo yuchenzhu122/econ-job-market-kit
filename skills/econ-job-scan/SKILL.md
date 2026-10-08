@@ -5,11 +5,24 @@ description: Scan JOE, EconJobMarket, IMF, World Bank, Chronicle Jobs and Inside
 
 # Twice-weekly job scan
 
+## Your personal version (read first)
+
+This file is the generic method, shared on GitHub. Each user has a personal version built from
+their own My Materials: `<materials_dir>/00-knowledge-base/skills/econ-job-scan.md` (`materials_dir` in
+config.json). If it exists, read it before anything else; its rules (priorities, what to stress,
+wording, people's advice, exceptions) take precedence over the defaults below wherever they
+conflict, except the safety rules. When the user tells you how this skill should behave from now
+on ("以后…", "from now on…"), add it there (dated) instead of editing this file, and say so.
+If it does not exist, offer once to create it with the econ-materials skill.
+
 Find the repo with `readlink -f ~/.claude/skills/econ-job-scan` (go up two levels). Read
 `<repo>/config.json`: `profile` (fields, PhD date, summary, what the user wants in order of
 priority, `work_authorization`) and `scan` (filters; `priority_types` = position types the user
 ranks first). Tracker = `<job_market_dir>/<tracker_file>`. Work files go next to the tracker:
 `scan_new.json`, `scan_eval.json`, `scan_state.json`.
+
+If `materials_dir` is set in config.json, the user's facts live in My Materials: `<materials_dir>/00-knowledge-base/` (00-personal-info … 12-application-form-kb, 13-advice, 14-employers, 15-market-wisdom) and the masters listed in its `materials-index.md`. Use them; when the user mentions advice, a contact or a new fact, add it there as the econ-materials skill describes (append, dated) and say where.
+The scan also skips links already in the industry tracker (`industry.dir` in config.json), if one exists.
 
 ## Commands (use only these, so runs need no extra approvals)
 
@@ -19,6 +32,7 @@ Use the absolute path, without `cd` (S = `<repo>/scripts`):
 - `python3 S/scan_postings.py text <n> [<n> ...]` (full ad text, location, deadline and visa
   sentences for candidates by number)
 - `python3 S/leads.py add <scan_eval.json>`, `python3 S/leads.py promote`
+- `python3 S/leads.py add --industry <industry_from_joe.json>` (industry firms found on JOE; see step 4)
 
 Write `scan_eval.json` with the Write tool. Do not write ad-hoc Python, `jq`, `sed` or
 heredoc commands to read or reshape the JSON files: each one needs the user to approve it
@@ -46,7 +60,7 @@ by hand. Use WebFetch only for High/Medium ads whose text is too short to judge.
      but not ruled out.
    - **Skip** (not written to Leads): ineligible or out of scope — senior or tenured only,
      requires years since PhD or a PhD already in hand earlier than `phd_expected`, postdoc
-     or visiting, industry or consulting firm (handled elsewhere), a work-authorization rule
+     or visiting, industry or consulting firm (not Skip: see step 4), a work-authorization rule
      the user cannot meet (see Work authorization below), a field the ad restricts
      to that is far from the user's, deadline passed, or the posting is in a language/
      requirement the user cannot meet (state the reason in your own working notes only).
@@ -55,6 +69,8 @@ by hand. Use WebFetch only for High/Medium ads whose text is too short to judge.
    ads often hold only a short teaser (text under ~400 characters) because the full ad is on
    the employer's site: open the `url` and follow its "Apply"/"Visit website" link to read it.
    CHE/IHE `deadline` is a best guess from the text (often the review date) or empty: confirm it.
+   `deadline` is the earliest date the ad gives (review begins, priority date, or deadline), never a
+   posting close / removal date such as JOE's listing-period end.
    Also: confirm
    eligibility (degree timing, years since PhD, citizenship or language requirements,
    teaching load), and note anything that changes the rating.
@@ -82,6 +98,13 @@ by hand. Use WebFetch only for High/Medium ads whose text is too short to judge.
    cautions (visa wording, required diversity statement, language, "Nov 21 is full-consideration
    date", non-US system). Put the visa flag first. Write dates, never relative time ("Deadline
    Oct 9", not "deadline is in 4 days"): the Leads sheet is read days later. Include High, Medium and Low; leave out Skip.
+   **Industry firms on JOE** (economic consulting, tech, banks and asset managers; not central
+   banks, government or think tanks): if `industry.dir` is set in config.json, rate them the
+   same way but write them to `industry_from_joe.json` next to the industry tracker instead, with
+   `category` (one of `industry.categories`) in place of `track`, `type` Consulting / Tech /
+   Finance, and run `leads.py add --industry` on it (build the tracker first with
+   `build_tracker.py --industry` if it does not exist). These postings usually want letters.
+   If `industry.dir` is not set, Skip them as before.
 5. `python3 <repo>/scripts/leads.py add <path to scan_eval.json>`. If the tracker is open in Excel, the
    script asks Excel to save and close it first and reopens it afterwards. If that fails, report it and leave `scan_eval.json` in place so the next run (or "add the
    scan results") can retry.

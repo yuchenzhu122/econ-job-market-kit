@@ -1,0 +1,27 @@
+% One-page industry resume: master copy.
+% Keep this folder in My Materials and register main.tex as "resume" in materials-index.md.
+% Tailored versions (scripts/make_resume.py) copy this folder and replace only the section files
+% a job needs (usually objective.tex and skills.tex); everything else comes from here.
+\documentclass[10pt]{article}
+\usepackage[letterpaper,margin=0.55in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{charter}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\definecolor{accent}{HTML}{0021A5}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlist[itemize]{leftmargin=1.1em,itemsep=0pt,topsep=1pt,parsep=0pt,label=\textbullet}
+\newcommand{\rsection}[1]{\par\vspace{6pt}{\color{accent}\large\bfseries #1}\par\vspace{1pt}{\color{accent}\hrule}\vspace{4pt}}
+% \entry{Organization}{Location}{Role}{Dates}
+\newcommand{\entry}[4]{\textbf{#1}\hfill #2\par\textit{#3}\hfill\textit{#4}\par}
+
+\begin{document}
+\input{sections/header}
+\input{sections/objective}
+\input{sections/education}
+\input{sections/experience}
+\input{sections/research}
+\input{sections/skills}
+\end{document}

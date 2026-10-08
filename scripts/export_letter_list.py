@@ -2,12 +2,14 @@
 
   python3 scripts/export_letter_list.py
 
-Reads the Tracker sheet, keeps rows with Letters? = Yes (skipping Withdrawn/Rejected), sorts them by deadline, and writes a
+Reads the Tracker sheet of every tracker (academic and, if set up, industry), keeps rows with Letters? = Yes (skipping Withdrawn/Rejected), sorts them by deadline, and writes a
 separate, read-only-style workbook to config["letter_share_file"] (e.g. a file in OneDrive or
 Google Drive). Share that file's link once with your letter writers; re-running this script
 overwrites the same file, so the link keeps working and always shows the latest list.
-Only the columns writers need are copied (type of job, deadline, where to submit, link, your status
-and the date you applied), plus one column per writer; notes stay private.
+Only the columns writers need are copied (deadline, type of job, where to submit, link, your
+status, the date you applied, and when letters are due), plus one column per writer; notes stay private.
+Letters Due comes from the tracker's Letters Due column (blank until known); Deadline is the
+application deadline.
 
 After those come the hand-filled columns: each writer's status (Sent / Waiting), then the comments,
 "<your first name> Comments" and "<writer> Comments" for each writer, filled in by hand in the
@@ -33,7 +35,7 @@ from openpyxl.styles import Protection
 from openpyxl.utils import get_column_letter as L
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from common import jm_path, load_config
+from common import jm_path, load_config, trackers
 from gsheet import WRITER_CHOICES, row_keys
 
 # colors for the Status column, same as the tracker
@@ -121,17 +123,26 @@ def export():
             for k, got in read_xlsx_status(copy, hand).items():
                 prev[k] = {**got, **prev.get(k, {})}
             print(f"NOTE: found {os.path.basename(copy)}; its entries were merged in. You can delete it.")
-    _write(cfg, src, dst, hand, prev, gsheet_ok)
+    _write(cfg, [p for _, p in trackers(cfg)] or [src], dst, hand, prev, gsheet_ok)
     remember_write(cfg, dst)
 
 
-def _write(cfg, src, dst, hand, prev, gsheet_ok):
+def _write(cfg, srcs, dst, hand, prev, gsheet_ok):
+    rows = []
+    for src in srcs:
+        rows += _tracker_rows(cfg, src, hand, prev)
+    rows.sort(key=lambda x: x["Deadline"] or dt.date(2099, 12, 31))
+    _save(cfg, rows, dst, hand, gsheet_ok)
+
+
+def _tracker_rows(cfg, src, hand, prev):
+    """Rows needing letters from one tracker, with what writers typed on the shared list (prev)."""
     ws = load_workbook(src, data_only=False)["Tracker"]
     hdr = {ws.cell(row=4, column=c).value: c for c in range(1, ws.max_column + 1) if ws.cell(row=4, column=c).value}
     need = ["Employer", "Position", "Type", "Apply Via", "Link", "Deadline", "Status", "Letters?"]
     missing = [h for h in need if h not in hdr]
     if missing:
-        raise SystemExit(f"Tracker is missing columns: {missing}")
+        raise SystemExit(f"{os.path.basename(src)} is missing columns: {missing}")
 
     rows = []
     for r in range(5, ws.max_row + 1):
@@ -145,6 +156,9 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
         d = get("Deadline")
         if isinstance(d, dt.datetime):
             d = d.date()
+        due = get("Letters Due") if "Letters Due" in hdr else None
+        if isinstance(due, dt.datetime):
+            due = due.date()
         sub = get("Submitted") if "Submitted" in hdr else None
         if isinstance(sub, dt.datetime):
             sub = sub.date()
@@ -152,10 +166,13 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
         for w in cfg["letter_writers"]:       # the mail check confirmed this letter: show it to everyone
             if w in hdr and str(get(w) or "").strip() in ("Received", "Uploaded"):
                 got[w] = "Received"
-        rows.append({"Deadline": d, "Submitted": sub, "Employer": emp, "Position": get("Position"), "Type": get("Type"),
+        rows.append({"Deadline": d, "Letters Due": due, "Submitted": sub, "Employer": emp, "Position": get("Position"), "Type": get("Type"),
                      "Apply Via": get("Apply Via"), "Link": get("Link"), "Status": status,
                      **{h: got.get(h, "") for h in hand}})
-    rows.sort(key=lambda x: x["Deadline"] or dt.date(2099, 12, 31))
+    return rows
+
+
+def _save(cfg, rows, dst, hand, gsheet_ok):
 
     FONT = "Arial"
     accent = cfg.get("accent_color", "0021A5")
@@ -173,6 +190,7 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
     sh["A1"].font = Font(name=FONT, size=15, bold=True, color=accent)
     sh["A2"] = (f"Positions that need a letter, soonest deadline first. Once I submit (Status = Submitted, "
                 f"'I Applied On' filled), the application system sends each of you the upload request. "
+                f"Letters Due is when your letter should be in. "
                 f"Please mark your own column Sent / Waiting; it changes to Received when the system confirms your letter. "
                 f"Comments are welcome in your Comments column; everything else is locked. Last updated "
                 f"{dt.date.today().strftime('%B %-d, %Y')}. Thank you for your support!")
@@ -180,8 +198,8 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
     # no formulas: the file is mostly viewed in a browser preview (Dropbox/OneDrive), which does not
     # recalculate them, so a "Days Left" formula would show up blank
     cols = [("#", 5), ("Deadline", 13), ("Employer", 30), ("Position", 32), ("Type", 16),
-            ("Submit Letter Via", 20), ("Link", 30), ("Status", 13), ("I Applied On", 13)]
-    LINK, STATUS, DATES = 7, 8, (2, 9)
+            ("Submit Letter Via", 20), ("Link", 30), ("Status", 13), ("I Applied On", 13), ("Letters Due", 13)]
+    LINK, STATUS, DATES = 7, 8, (2, 9, 10)
     HAND = [(len(cols) + 1 + i, kind, who) for i, (_, _, kind, who) in enumerate(hand_columns(cfg))]
     cols += [(h, w) for h, w, *_ in hand_columns(cfg)]
     WCOLS = [c for c, kind, _ in HAND if kind == "status"]
@@ -189,7 +207,7 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
         c = sh.cell(row=4, column=i, value=h)
         c.font = fh; c.fill = PatternFill("solid", fgColor=accent); c.alignment = ctr; c.border = bd
         sh.column_dimensions[L(i)].width = w
-    table = [[k, x["Deadline"], x["Employer"], x["Position"], x["Type"], x["Apply Via"], x["Link"], x["Status"], x["Submitted"]]
+    table = [[k, x["Deadline"], x["Employer"], x["Position"], x["Type"], x["Apply Via"], x["Link"], x["Status"], x["Submitted"], x["Letters Due"]]
              + [x[h] for h in hand] for k, x in enumerate(rows, start=1)]
     for k, (x, vals) in enumerate(zip(rows, table), start=1):
         r = 4 + k

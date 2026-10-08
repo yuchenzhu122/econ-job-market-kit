@@ -1,9 +1,19 @@
 ---
 name: econ-tracker-fill
-description: Fill in an economics job market application tracker from posting links. Use when the user says "fill the tracker", "补全追踪表", "read the links in my tracker", or has pasted job links into the tracker's Link column and wants the rest of each row completed. Also use for "update the letter list", "更新老师那页", "refresh the letter writers' file", and for setting up the letter writers' Google Sheet ("set up the Google Sheet", "设置Google Sheet"). Reads each posting and fills Employer, Position, Type, Track, Apply Via, Deadline, Letters?, Still Need, Notes. Does not write cover letters (that is econ-cover-letter).
+description: Fill in an economics job market application tracker from posting links. Use when the user says "fill the tracker", "补全追踪表", "read the links in my tracker", or has pasted job links into the tracker's Link column and wants the rest of each row completed. Also use for "update the letter list", "更新老师那页", "refresh the letter writers' file", and for setting up the letter writers' Google Sheet ("set up the Google Sheet", "设置Google Sheet"). Reads each posting and fills Employer, Position, Type, Track, Apply Via, Deadline, Letters Due, Letters?, Still Need, Notes. Does not write cover letters (that is econ-cover-letter).
 ---
 
 # Fill tracker rows from posting links
+
+## Your personal version (read first)
+
+This file is the generic method, shared on GitHub. Each user has a personal version built from
+their own My Materials: `<materials_dir>/00-knowledge-base/skills/econ-tracker-fill.md` (`materials_dir` in
+config.json). If it exists, read it before anything else; its rules (priorities, what to stress,
+wording, people's advice, exceptions) take precedence over the defaults below wherever they
+conflict, except the safety rules. When the user tells you how this skill should behave from now
+on ("以后…", "from now on…"), add it there (dated) instead of editing this file, and say so.
+If it does not exist, offer once to create it with the econ-materials skill.
 
 ## Locate things
 
@@ -12,11 +22,14 @@ This skill lives in `<repo>/skills/econ-tracker-fill/` (usually symlinked into
 and go up two levels. Read `<repo>/config.json`:
 
 - tracker = `<job_market_dir>/<tracker_file>` (expand `~`)
-- `standard_packet` = materials the user always has ready
+- `standard_packet` = materials the user always has ready (also check My Materials'
+  `materials-index.md` when `materials_dir` is set: what is indexed is ready)
+
+For rows of the industry tracker (`industry.dir`), use the econ-industry-apply skill instead.
 
 Tracker layout (built by `scripts/build_tracker.py`): sheet `Tracker`, headers in row 4,
 data from row 5. Columns: Track, Employer, Position, Type, Apply Via, Link, Deadline,
-Days Left (formula), Status, Still Need, Cover Letter, Letters?, one column per letter
+Letters Due, Days Left (formula), Status, Still Need, Cover Letter, Letters?, one column per letter
 writer, Notes. Dropdown values come from the `Lists` sheet; only write values listed there.
 The writer columns hold "Received" and are filled only by the mail check (econ-mail-check) when
 a confirmation email says that writer's letter arrived; never fill or change them here.
@@ -34,8 +47,20 @@ a confirmation email says that writer's letter arrived; never fill or change the
    - Track: Academic / Industry / Government / Policy.
    - Type: closest value in `Lists`.
    - Apply Via: where the ad says to apply (a value from `Lists`).
-   - Deadline: the stated deadline as a real date. If the ad says "review begins <date>"
-     or "until filled", use the review date and note it. No date at all: leave blank, note it.
+   - Deadline: the date the user applies by, as a real date: the EARLIEST date the ad gives
+     (review begins, priority date, or the application deadline), ignoring posting close /
+     removal dates such as JOE's listing-period end. E.g. "Review of applications
+     will begin on November 1 ... for full consideration, applications should be received by
+     November 30" → Deadline Nov 1. Note what the date is. No date at all: leave blank, note it.
+   - Letters Due (only when Letters? = Yes): only when the ad says by when materials or letters
+     should be received: "applications received by <date> will receive full / priority
+     consideration", "reference letters submitted by <date>", "complete applications by <date>".
+     Use that date (Nov 30 in the example above). A review-begins date alone, an ordinary
+     "Application deadline" field, or a posting's close / removal date does not count: leave
+     Letters Due blank (unknown; the writers' list shows it blank). Older trackers may lack the column: add it first with
+     `ensure_date_column(ws, "Letters Due")` from `<repo>/scripts/common.py`.
+     Rows already filled get Letters Due only when the user asks ("fill Letters Due", "补 Letters Due", "补 Due"):
+     then re-read the links of rows with Letters? = Yes and an empty Letters Due.
    - Letters?: Yes if the ad asks for letters or references, else No.
    - Still Need: required materials NOT in `standard_packet` (e.g. diversity statement,
      a writing sample other than the JMP, transcripts, sample syllabus, teaching video).
@@ -56,7 +81,7 @@ a confirmation email says that writer's letter arrived; never fill or change the
    `letter_share_file` from config.json (the file the letter writers have a link to), and the Google
    Sheet in `letter_share_gsheet` if one is set. Pass on any "Google Sheet not updated" warning.
 6. **Report** (in the user's language): a short table of filled rows (Employer, Position,
-   Deadline, Apply Via, Letters?, Still Need), rows you could not read and why, and what to
+   Deadline, Letters Due, Apply Via, Letters?, Still Need), rows you could not read and why, and what to
    double-check (inferred deadlines, ambiguous Type). Offer to draft cover letters.
 
 ## The shared letter list
@@ -68,7 +93,7 @@ Rejected / Withdrawn, soonest deadline first) to `letter_share_file` (a read-onl
 and, if `letter_share_gsheet` is set, to that Google Sheet, which the writers edit. Columns:
 
 - From the tracker, rewritten on every refresh: #, Deadline, Employer, Position, Type, Submit
-  Letter Via, Link, Status, I Applied On. To change these, change the tracker, not the sheet.
+  Letter Via, Link, Status, I Applied On, Letters Due (from the tracker; blank until known). To change these, change the tracker, not the sheet.
 - Filled by hand, read back and kept on every refresh (matched by Link, else Employer +
   Position): one status column per writer (Sent / Waiting, filled by the writers), then
   "<user's first name> Comments" and "<writer> Comments" for each writer. Never write into these
