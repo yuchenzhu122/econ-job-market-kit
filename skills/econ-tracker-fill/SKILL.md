@@ -34,14 +34,15 @@ a confirmation email says that writer's letter arrived; never fill or change the
    - Track: Academic / Industry / Government / Policy.
    - Type: closest value in `Lists`.
    - Apply Via: where the ad says to apply (a value from `Lists`).
-   - Deadline: the user's application deadline, i.e. the deadline the ad states, as a real date.
-     If the ad only says "review begins <date>" or "until filled" with a review date, use that
-     date (the user applies by then) and note it. No date at all: leave blank, note it.
-   - Letters Due (only when Letters? = Yes): the date letters must be in, which the user takes
-     to be when review begins. Use a separately stated letter deadline if there is one, else the
-     "review begins / applications reviewed starting" date (then Deadline and Letters Due are the
-     same date), else leave blank (do not copy an ordinary stated Deadline; the writers' list shows
-     it blank). Older trackers may lack the column: add it first with
+   - Deadline: the date the user applies by, as a real date: the EARLIEST date the ad gives
+     (review begins, priority date, or the application deadline). E.g. "Review of applications
+     will begin on November 1 ... for full consideration, applications should be received by
+     November 30" → Deadline Nov 1. Note what the date is. No date at all: leave blank, note it.
+   - Letters Due (only when Letters? = Yes): when the letters must be in. A separately stated
+     letter deadline if there is one; else, when the ad gives two dates, the LATER one (full
+     consideration / applications received by; Nov 30 in the example above); else, when the
+     ad gives only a review-begins date, that same date as Deadline. An ad with just one
+     ordinary deadline: leave blank. Never use a posting's close / removal date. Older trackers may lack the column: add it first with
      `ensure_date_column(ws, "Letters Due")` from `<repo>/scripts/common.py`.
      Rows already filled get Letters Due only when the user asks ("fill Letters Due", "补 Letters Due", "补 Due"):
      then re-read the links of rows with Letters? = Yes and an empty Letters Due.

@@ -178,7 +178,7 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
     sh["A1"].font = Font(name=FONT, size=15, bold=True, color=accent)
     sh["A2"] = (f"Positions that need a letter, soonest deadline first. Once I submit (Status = Submitted, "
                 f"'I Applied On' filled), the application system sends each of you the upload request. "
-                f"Letters Due is when your letter should be in (usually when review begins). "
+                f"Letters Due is when your letter should be in. "
                 f"Please mark your own column Sent / Waiting; it changes to Received when the system confirms your letter. "
                 f"Comments are welcome in your Comments column; everything else is locked. Last updated "
                 f"{dt.date.today().strftime('%B %-d, %Y')}. Thank you for your support!")
