@@ -19,6 +19,9 @@ Rule-based pre-filter (settings in config.json "scan"): section / position type,
 (drops senior-only and postdoc/visiting), field (JEL prefixes, categories, keywords),
 deadline not passed, not already seen, not already in the tracker. What survives is
 written to scan_new.json for Claude to read in full and judge fit (see skills/econ-job-scan).
+Only postings the rules drop are remembered as seen here; candidates stay new until Claude has
+judged them (leads.py add writes every judged posting, Skip included, to Leads and marks it seen),
+so a run that is never finished does not lose them.
 """
 import datetime as dt
 import html
@@ -261,7 +264,9 @@ def keep(x, sc, today):
     if "nonacademic" in x["section"].lower():
         return True, ""     # policy jobs: field labels are broad; Claude judges fit from the full text
     text = (x["text"] + " " + " ".join(x["field_names"]) + " " + x["title"]).lower()
-    field_ok = (any(f.startswith(tuple(sc["field_jel_prefixes"])) for f in x["fields"])
+    open_field = x["field_names"] and all(n.lower().startswith("general") for n in x["field_names"])
+    field_ok = (open_field      # JOE "General" only: often an open-field search; Claude reads the ad
+                or any(f.startswith(tuple(sc["field_jel_prefixes"])) for f in x["fields"])
                 or any(c in sc["ejm_categories"] for c in x["field_names"])
                 or any(k in text for k in sc["field_keywords"]))
     if not field_ok:
@@ -297,7 +302,7 @@ def main():
         except Exception as e:  # keep going if one source is down
             errors.append(f"{name}: {e}")
 
-    stats, new = {}, []
+    stats, new, dropped = {}, [], set()
     for x in posts:
         if x["id"] in seen or norm_link(x["url"]) in tracked:
             stats["seen"] = stats.get("seen", 0) + 1
@@ -318,6 +323,7 @@ def main():
             new.append(x)
         else:
             stats[reason] = stats.get(reason, 0) + 1
+            dropped.add(x["id"])
 
     # the same job is often posted on several boards: keep one (JOE > EJM > CHE > IHE), remember the other link
     def key(x):
@@ -341,8 +347,8 @@ def main():
     out_path = os.path.join(apps, "scan_new.json")
     json.dump({"date": today, "errors": errors, "filtered_out": stats, "candidates": new},
               open(out_path, "w"), indent=1, ensure_ascii=False)
-    # remember everything we looked at, so the next run only shows new postings
-    state["seen"] = sorted(set(state["seen"]) | {x["id"] for x in posts})
+    # remember what the rules dropped; candidates are marked seen by leads.py add once judged
+    state["seen"] = sorted(set(state["seen"]) | dropped)
     state["last_run"] = today
     json.dump(state, open(state_path, "w"))
     print(f"{len(posts)} postings fetched, {len(new)} new candidates -> {out_path}")

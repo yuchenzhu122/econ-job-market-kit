@@ -58,12 +58,15 @@ by hand. Use WebFetch only for High/Medium ads whose text is too short to judge.
      country system, policy role with partly matching focus).
    - **Low**: a weak match (another field named as the priority, mainly theory/macro/finance)
      but not ruled out.
-   - **Skip** (not written to Leads): ineligible or out of scope — senior or tenured only,
+   - **Skip** (written to Leads in grey, so the user can see what was passed over and why): ineligible or out of scope — senior or tenured only,
      requires years since PhD or a PhD already in hand earlier than `phd_expected`, postdoc
      or visiting, industry or consulting firm (not Skip: see step 4), a work-authorization rule
      the user cannot meet (see Work authorization below), a field the ad restricts
      to that is far from the user's, deadline passed, or the posting is in a language/
-     requirement the user cannot meet (state the reason in your own working notes only).
+     requirement the user cannot meet. Put the reason in `why` (one short phrase, e.g. "Finance
+     department only", "Associate/Full only", "Requires US citizenship").
+   Judge **every** candidate: the scan keeps offering a posting until it has been written by
+   `leads.py add` (that is what marks it seen), so a half-finished triage is picked up next run.
 3. **Read the full text** (`text <n> ...`, several numbers per call) for every High and Medium
    candidate before finalizing. CHE/IHE
    ads often hold only a short teaser (text under ~400 characters) because the full ad is on
@@ -99,7 +102,9 @@ by hand. Use WebFetch only for High/Medium ads whose text is too short to judge.
    (e.g. "Open field; applied micro group; teaches econometrics"). `flags` = concrete
    cautions (visa wording, required diversity statement, language, "Nov 21 is full-consideration
    date", non-US system). Put the visa flag first. Write dates, never relative time ("Deadline
-   Oct 9", not "deadline is in 4 days"): the Leads sheet is read days later. Include High, Medium and Low; leave out Skip.
+   Oct 9", not "deadline is in 4 days"): the Leads sheet is read days later. Include High, Medium, Low
+   and Skip (Skip needs only id, url, source, employer, position, track, type, location, deadline,
+   fit, why, carnegie).
    **Industry firms on JOE** (economic consulting, tech, banks and asset managers; not central
    banks, government or think tanks): if `industry.dir` is set in config.json, rate them the
    same way but write them to `industry_from_joe.json` next to the industry tracker instead, with

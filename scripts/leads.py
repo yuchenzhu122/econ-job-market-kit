@@ -11,7 +11,7 @@ again; one only in the other tracker's Leads is added with a flag.
 
 evaluated.json is a list of objects with keys:
   id, url, source, employer, position, track (industry: category), type, location, deadline (YYYY-MM-DD or ""),
-  fit (High | Medium | Low), why, flags (string or list), also_at (optional list of other links),
+  fit (High | Medium | Low | Skip; Skip rows are written in grey with the reason in why), why, flags (string or list), also_at (optional list of other links),
   carnegie (academic only, US schools: R1 / R2 / RCU from the 2025 Carnegie Research Activity Designations,
   "—" for a US school with none of these, "Non-US", or "Non-academic")
 deadline may also be text like "Review begins 2026-10-30": the date is used and the text kept in Flags.
@@ -41,7 +41,7 @@ COLS = [("Found", 11), ("Fit", 8), ("Employer", 26), ("Position", 30), ("Track",
 FONT = "Arial"
 side = Side(style="thin", color="D0D0D0")
 BD = Border(left=side, right=side, top=side, bottom=side)
-FIT_ORDER = {"High": 0, "Medium": 1, "Low": 2}
+FIT_ORDER = {"High": 0, "Medium": 1, "Low": 2, "Skip": 3}
 
 
 def cols(kind):
@@ -200,9 +200,12 @@ def add(cfg, path, items, kind="academic"):
     index = existing_index(cfg)
     wb = load_workbook(path)
     ws = ensure_sheet(wb, cfg.get("accent_color", "0021A5"), kind)
+    keep_all = list(items)
     keep, skipped = [], []
     for x in items:
         hits = find_existing(index, x.get("url"), x.get("employer"), x.get("position"))
+        for u in (x.get("also_at") or []):       # the same ad under another link (JOE often lists one job twice)
+            hits += [e for e in find_existing(index, u, None, None) if e not in hits]
         mine = [e for e in hits if e["kind"] == kind]
         tracked = [e for e in hits if e["kind"] != kind and e["sheet"] == "Tracker"]
         # same job already in this tracker (same link, or same employer and title), or in the other Tracker
@@ -249,6 +252,9 @@ def add(cfg, path, items, kind="academic"):
             c.border = BD
             c.alignment = Alignment(wrap_text=True, vertical="top",
                                     horizontal="center" if i in (1, 2, 5, 8, 11, 13, 14) else None)
+        if x.get("fit") == "Skip":      # judged out of scope: kept so the user can see why
+            for i in range(1, len(vals) + 1):
+                ws.cell(row=r, column=i).font = Font(name=FONT, size=10, color="9C9C9C")
         ws.cell(row=r, column=1).number_format = "mmm d"
         ws.cell(row=r, column=8).number_format = "mmm d, yyyy"
         if x.get("url"):
@@ -259,9 +265,22 @@ def add(cfg, path, items, kind="academic"):
     write_sorted(ws, new + old)
     restore_dropdowns(wb, cfg["letter_writers"])
     wb.save(path)
-    print(f"added {len(items)} lead(s) to the top of {path}")
+    mark_seen(cfg, [x.get("id") for x in keep_all])
+    n_skip = sum(x.get("fit") == "Skip" for x in items)
+    print(f"added {len(items)} lead(s) ({n_skip} Skip) to the top of {path}")
     for s_ in skipped:
         print("  skipped (already tracked):", s_)
+
+
+def mark_seen(cfg, ids):
+    """Record judged postings in the academic scan's state, so scan_postings.py stops offering them."""
+    p = os.path.join(os.path.dirname(tracker_path(cfg, "academic")), "scan_state.json")
+    ids = {i for i in ids if i}
+    if not ids or not os.path.exists(p):
+        return
+    state = json.load(open(p))
+    state["seen"] = sorted(set(state.get("seen", [])) | ids)
+    json.dump(state, open(p, "w"))
 
 
 PLATFORMS = [("econjobmarket", "EconJobMarket"), ("academicjobsonline", "AcademicJobsOnline"),
