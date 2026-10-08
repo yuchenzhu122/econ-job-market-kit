@@ -20,7 +20,7 @@ submit (by hand, or optionally from confirmation emails), and gives your letter 
 | `scripts/mail_scan.py` | Optional. Reads recent mail through the Mail app already signed in on your Mac (no passwords). Opens only emails that look like application-system or letter notifications, never senders in `mail.skip_senders` (e.g. your own university). |
 | `scripts/md2pdf.py` | Converts a Markdown research or teaching statement into a PDF with the same letterhead. |
 | `skills/econ-job-scan` | Claude Code skill: runs the scan, rates each new posting against your `profile`, checks visa rules, writes the Leads sheet. |
-| `skills/econ-tracker-fill` | Claude Code skill: reads the links in your tracker and fills employer, position, application deadline, Letters Due (when review begins), where to apply, whether letters are needed, and extra materials. |
+| `skills/econ-tracker-fill` | Claude Code skill: reads the links in your tracker and fills employer, position, Deadline (the earliest date in the ad, e.g. when review begins), Letters Due (only if the ad says by when materials should be received), where to apply, whether letters are needed, and extra materials. |
 | `skills/econ-cover-letter` | Claude Code skill: picks the template, reads the posting and the department's pages, writes the fit paragraph, builds the PDF, marks it Drafted. Guidance in `skills/econ-cover-letter/templates.md`. |
 | `skills/econ-mail-check` | Optional Claude Code skill: runs the mail scan, records Submitted dates and letters Received in the tracker, refreshes the writers' list. |
 

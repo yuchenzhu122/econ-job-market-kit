@@ -55,6 +55,8 @@ by hand. Use WebFetch only for High/Medium ads whose text is too short to judge.
    ads often hold only a short teaser (text under ~400 characters) because the full ad is on
    the employer's site: open the `url` and follow its "Apply"/"Visit website" link to read it.
    CHE/IHE `deadline` is a best guess from the text (often the review date) or empty: confirm it.
+   `deadline` is the earliest date the ad gives (review begins, priority date, or deadline), never a
+   posting close / removal date such as JOE's listing-period end.
    Also: confirm
    eligibility (degree timing, years since PhD, citizenship or language requirements,
    teaching load), and note anything that changes the rating.
