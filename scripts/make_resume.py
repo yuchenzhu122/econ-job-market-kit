@@ -35,7 +35,15 @@ def pages(pdf):
         from pypdf import PdfReader
         return len(PdfReader(pdf).pages)
     except ImportError:
-        return len(re.findall(rb"/Type\s*/Page[^s]", open(pdf, "rb").read()))
+        import zlib
+        data = open(pdf, "rb").read()
+        # page objects may sit inside compressed object streams (pdfTeX's default), so inflate those too
+        for m in re.finditer(rb"stream\r?\n(.*?)endstream", data, re.S):
+            try:
+                data += zlib.decompress(m.group(1))
+            except zlib.error:
+                pass
+        return len(re.findall(rb"/Type\s*/Page(?![s\w])", data))
 
 
 def main():
