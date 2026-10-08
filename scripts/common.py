@@ -128,6 +128,7 @@ def ensure_submitted_column(ws):
     """Add a 'Submitted' date column at the right edge of an older Tracker sheet. Returns its index."""
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter as L
+    from openpyxl.worksheet.datavalidation import DataValidation
     H = tracker_headers(ws)
     if "Submitted" in H:
         return H["Submitted"]
@@ -143,4 +144,8 @@ def ensure_submitted_column(ws):
             ws.column_dimensions[L(H[name])].hidden = True
     for r in range(5, 155):
         ws.cell(row=r, column=col).number_format = "mmm d, yyyy"
+    d = DataValidation(type="date", operator="greaterThan", formula1="DATE(2026,1,1)", allow_blank=True)
+    d.error = "Enter a date, e.g. 11/15/2026."
+    ws.add_data_validation(d)
+    d.add(f"{L(col)}5:{L(col)}154")
     return col

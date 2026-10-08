@@ -98,6 +98,7 @@
   },
   "letter_share_hide": [],
   "mail": {
+    "_comment": "Optional. Delete this block to skip the mail check and fill in Submitted dates by hand.",
     "account": "<Mail.app account name, e.g. Exchange>",
     "mailbox": "Inbox",
     "days": 7,

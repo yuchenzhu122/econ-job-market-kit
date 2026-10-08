@@ -121,8 +121,10 @@ def tracker_rows(path):
 
 def fetch(cfg):
     m = cfg.get("mail") or {}
-    if not m.get("account"):
-        raise SystemExit('Add "mail": {"account": "...", "mailbox": "Inbox", "days": 7} to config.json.')
+    if not m.get("account") or m["account"].startswith("<"):
+        print('The mail check is optional and not set up: no "mail" account in config.json. Fill in '
+              'Submitted dates by hand, or add "mail": {"account": "...", "mailbox": "Inbox", "days": 7}.')
+        sys.exit(0)
     tracker, new_path, state_path = paths(cfg)
     state = json.load(open(state_path)) if os.path.exists(state_path) else {"seen": []}
     seen = set(state["seen"])

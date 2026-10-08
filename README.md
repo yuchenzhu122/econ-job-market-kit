@@ -3,7 +3,7 @@
 A small toolkit for the economics academic job market, built to work with Claude Code.
 It finds postings twice a week, keeps one Excel tracker of everything you apply to, writes a
 tailored cover letter per position (research or teaching-focused template), records when you
-submit by reading confirmation emails, and gives your letter writers a list that updates itself.
+submit (by hand, or optionally from confirmation emails), and gives your letter writers a list that updates itself.
 
 [中文说明见下方](#中文说明)
 
@@ -17,12 +17,12 @@ submit by reading confirmation emails, and gives your letter writers a list that
 | `scripts/update_tracker.py` | One step, no Claude needed: moves Leads marked Add into the Tracker and refreshes the letter-writer file. Works while Excel has the tracker open (it saves, updates and reopens it). Also runs from a **▶ Update Tracker** link in the sheet (see below). |
 | `scripts/make_letter.py` | Builds a cover letter PDF from your own paragraphs in `config.json`, in two templates: `research` (one page) and `teaching` (up to two pages). Only the fit paragraph is new per school. |
 | `scripts/export_letter_list.py` | Builds the list your letter writers see (the only thing you share; the tracker stays private): positions that need letters, soonest deadline first, with type of job, deadline, where to submit, link, your status and the date you applied, then a status column per writer (Sent / Waiting) and Comments columns for you and each writer. Always writes a read-only Excel file to `letter_share_file`; **optionally** also writes it to a Google Sheet that writers can fill in (see [Google Sheet for letter writers](#google-sheet-for-letter-writers-optional)). Rewritten on every update, so the link never changes. |
-| `scripts/mail_scan.py` | Reads recent mail through the Mail app already signed in on your Mac (no passwords). Opens only emails that look like application-system or letter notifications, never senders in `mail.skip_senders` (e.g. your own university). |
+| `scripts/mail_scan.py` | Optional. Reads recent mail through the Mail app already signed in on your Mac (no passwords). Opens only emails that look like application-system or letter notifications, never senders in `mail.skip_senders` (e.g. your own university). |
 | `scripts/md2pdf.py` | Converts a Markdown research or teaching statement into a PDF with the same letterhead. |
 | `skills/econ-job-scan` | Claude Code skill: runs the scan, rates each new posting against your `profile`, checks visa rules, writes the Leads sheet. |
 | `skills/econ-tracker-fill` | Claude Code skill: reads the links in your tracker and fills employer, position, deadline, where to apply, whether letters are needed, and extra materials. |
 | `skills/econ-cover-letter` | Claude Code skill: picks the template, reads the posting and the department's pages, writes the fit paragraph, builds the PDF, marks it Drafted. Guidance in `skills/econ-cover-letter/templates.md`. |
-| `skills/econ-mail-check` | Claude Code skill: runs the mail scan, records Submitted dates and letters Received in the tracker, refreshes the writers' list. |
+| `skills/econ-mail-check` | Optional Claude Code skill: runs the mail scan, records Submitted dates and letters Received in the tracker, refreshes the writers' list. |
 
 ## Setup (about 10 minutes)
 
@@ -48,7 +48,8 @@ In `config.json` set:
   Sheet;
 - `cover_letter`: your own paragraphs for both templates (see Cover letters);
 - `profile` and `scan`: fields, what you want in order of priority, work authorization, filters;
-- `mail`: the Mail account and mailbox to read, how many days back, and `skip_senders`.
+- `mail` (optional): the Mail account and mailbox to read, how many days back, and `skip_senders`.
+  Delete the block if you would rather type Submitted dates yourself.
 
 ## Daily use
 
@@ -59,9 +60,11 @@ In `config.json` set:
    where to apply, letters, extra materials and visa notes, without overwriting what you typed.
 3. **Write letters.** Say "write the cover letter for <Employer>". You review the PDF and set Final.
 4. **Submit** on the employer's site yourself.
-5. **Nothing to log by hand.** Every evening the mail check records the Submitted date when a
-   confirmation email arrives, and marks a writer Received in the tracker when a system says their
-   letter came in. The writers' list shows your status and the date you applied.
+5. **Record submissions.** Set Status to Submitted, type the date in Submitted, and click
+   **▶ Update Tracker** so the writers' list picks it up; mark a writer Received when their letter
+   is in. Or turn on the optional mail check: every evening it records the Submitted date when a
+   confirmation email arrives and marks writers Received from letter notifications. It never
+   overwrites a date you typed. The writers' list shows your status and the date you applied.
 6. Share the writers' list once: the Excel file's view-only link, or the Google Sheet (as
    Editor) if you set it up. It refreshes after every tracker update.
 
@@ -121,7 +124,7 @@ Preferences that shape the ratings:
 | Task | When | Prompt |
 |---|---|---|
 | Job scan | e.g. Mon and Thu, 8 am | "Run the econ-job-scan skill and summarize the result" |
-| Mail check | e.g. daily, 9 pm | "Run the econ-mail-check skill and summarize the result" |
+| Mail check (optional) | e.g. daily, 9 pm | "Run the econ-mail-check skill and summarize the result" |
 
 Tasks run while the Claude app is open (a missed run happens at next launch); the mail check also
 needs the Mail app open. Click "Run now" once and choose "Always allow" so later runs don't stop
@@ -183,7 +186,7 @@ To turn it off, empty `letter_share_gsheet`. Claude can walk you through the set
 
 ## 中文说明
 
-给经济学 job market 用的小工具包，配合 Claude Code 使用：每周自动找职位，用一个 Excel 追踪所有申请，按岗位写 cover letter，读确认邮件自动记录提交，给推荐人一份自动更新的清单。
+给经济学 job market 用的小工具包，配合 Claude Code 使用：每周自动找职位，用一个 Excel 追踪所有申请，按岗位写 cover letter，记录提交（手动填写，或可选地读确认邮件自动填），给推荐人一份自动更新的清单。
 
 **1. 自动找职位（每周一、四）**
 
@@ -205,9 +208,11 @@ To turn it off, empty `letter_share_gsheet`. Claude can walk you through the set
 - 每封都按岗位定制：选模板、写准确的职位和系名、读广告和系里官网后重写契合段、回答广告要求信里写的内容。固定段落默认不变，某封需要调整会先问你。关于你的事实只来自你的材料，关于学校的只来自它的广告和官网，不编造。
 - 用法：跟 Claude 说"给 XX 写 cover letter"，看完 PDF 后在 Tracker 里标 Final。
 
-**4. 自动记录提交（每晚 9 点）**
+**4. 记录提交（手动，或可选的每晚查邮件）**
 
-- 读 Mac "邮件" App 里最近的邮件（不需要密码；`skip_senders` 里的发件人，比如本校邮箱，一律不打开）。
+- 手动：在 Tracker 里把状态改成 Submitted、在 **Submitted** 列填日期，老师的信到了就在对应列选 Received，然后点 **▶ Update Tracker**，推荐人清单就会更新。
+- 可选：每晚自动查邮件。不想用的话，`config.json` 里删掉 `mail` 那一段、不建这个定时任务即可。自动填写不会覆盖你手动填的日期。
+- 查邮件会读 Mac "邮件" App 里最近的邮件（不需要密码；`skip_senders` 里的发件人，比如本校邮箱，一律不打开）。
 - 看到申请确认，就在 Tracker 的 **Submitted** 列填上日期、状态改成 Submitted；看到推荐信已收到的通知，就在 Tracker 里对应老师那一列标 Received；对不上的、面试邀请、拒信会在小结里提醒你。
 - 运行时 Claude 桌面版和"邮件"都要开着。
 
@@ -222,7 +227,7 @@ To turn it off, empty `letter_share_gsheet`. Claude can walk you through the set
 
 **6. Statement 转 PDF**：research / teaching statement 用 Markdown 写，一条命令排成 PDF。
 
-**定时任务**：在 Claude 桌面版左侧 **Scheduled** 里设置，扫职位和查邮件各一个，运行小结也在那里看。第一次点 Run now，弹窗选"始终允许"。
+**定时任务**：在 Claude 桌面版左侧 **Scheduled** 里设置，扫职位和查邮件（可选）各一个，运行小结也在那里看。第一次点 Run now，弹窗选"始终允许"。
 
 个人信息全部放在 `config.json`（不会上传到 GitHub），复制 `config.example.json` 改名后填写即可。工具不会替你提交申请、发邮件或登录任何网站。
 
