@@ -11,11 +11,13 @@ again; one only in the other tracker's Leads is added with a flag.
 
 evaluated.json is a list of objects with keys:
   id, url, source, employer, position, track (industry: category), type, location, deadline (YYYY-MM-DD or ""),
-  fit (High | Medium | Low), why, flags (string or list), also_at (optional list of other links)
+  fit (High | Medium | Low), why, flags (string or list), also_at (optional list of other links),
+  carnegie (academic only, US schools: R1 / R2 / RCU from the 2025 Carnegie Research Activity Designations,
+  "—" for a US school with none of these, "Non-US", or "Non-academic")
 deadline may also be text like "Review begins 2026-10-30": the date is used and the text kept in Flags.
 
 Leads columns: Found, Fit, Employer, Position, Track (industry: Category), Type, Location, Deadline, Why, Flags,
-Source, Link, Decision (Add / Maybe / Pass; "Added" once promoted).
+Source, Link, Decision (Add / Maybe / Pass; "Added" once promoted), Carnegie (academic only).
 """
 import datetime as dt
 import json
@@ -35,7 +37,7 @@ from common import (close_in_excel, ensure_date_column, jm_path, load_config, no
 
 COLS = [("Found", 11), ("Fit", 8), ("Employer", 26), ("Position", 30), ("Track", 12), ("Type", 15),
         ("Location", 16), ("Deadline", 11), ("Why", 44), ("Flags", 26), ("Source", 7), ("Link", 22),
-        ("Decision", 10)]
+        ("Decision", 10), ("Carnegie", 11)]      # Carnegie last: scripts address the other columns by position
 FONT = "Arial"
 side = Side(style="thin", color="D0D0D0")
 BD = Border(left=side, right=side, top=side, bottom=side)
@@ -43,11 +45,30 @@ FIT_ORDER = {"High": 0, "Medium": 1, "Low": 2}
 
 
 def cols(kind):
-    return [("Category", w) if h == "Track" and kind == "industry" else (h, w) for h, w in COLS]
+    return [("Category", w) if h == "Track" and kind == "industry" else (h, w) for h, w in COLS
+            if not (h == "Carnegie" and kind == "industry")]
+
+
+def header_cell(ws, col, text, width, accent):
+    c = ws.cell(row=4, column=col, value=text)
+    c.font = Font(name=FONT, size=10, bold=True, color="FFFFFF")
+    c.fill = PatternFill("solid", fgColor=accent)
+    c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    c.border = BD
+    ws.column_dimensions[L(col)].width = width
+
+
+def ensure_new_columns(ws, accent, kind):
+    """Add headers for columns added to COLS after the sheet was made (e.g. Carnegie)."""
+    for i, (h, w) in enumerate(cols(kind), start=1):
+        if ws.cell(row=4, column=i).value in (None, ""):
+            header_cell(ws, i, h, w, accent)
+    ws.auto_filter.ref = f"A4:{L(len(cols(kind)))}2000"
 
 
 def ensure_sheet(wb, accent, kind="academic"):
     if "Leads" in wb.sheetnames:
+        ensure_new_columns(wb["Leads"], accent, kind)
         return wb["Leads"]
     ws = wb.create_sheet("Leads", 2)
     ws["A1"] = ("Leads · found in your LinkedIn / Indeed job alerts and on company career pages" if kind == "industry"
@@ -57,12 +78,7 @@ def ensure_sheet(wb, accent, kind="academic"):
                 "tracker'), Maybe = keep, Pass = ignore. Fit is Claude's judgment against your CV; check the Why and Flags.")
     ws["A2"].font = Font(name=FONT, size=10, italic=True, color="555555")
     for i, (h, w) in enumerate(cols(kind), start=1):
-        c = ws.cell(row=4, column=i, value=h)
-        c.font = Font(name=FONT, size=10, bold=True, color="FFFFFF")
-        c.fill = PatternFill("solid", fgColor=accent)
-        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        c.border = BD
-        ws.column_dimensions[L(i)].width = w
+        header_cell(ws, i, h, w, accent)
     dv = DataValidation(type="list", formula1='"Add,Maybe,Pass,Added"', allow_blank=True)
     ws.add_data_validation(dv)
     dv.add(f"M5:M2000")
@@ -72,7 +88,7 @@ def ensure_sheet(wb, accent, kind="academic"):
     for val, fill in (("Add", "BDD7EE"), ("Added", "D9D9D9"), ("Pass", "F2F2F2")):
         ws.conditional_formatting.add("M5:M2000", FormulaRule(formula=[f'$M5="{val}"'], fill=PatternFill("solid", fgColor=fill)))
     ws.freeze_panes = "C5"
-    ws.auto_filter.ref = "A4:M2000"
+    ws.auto_filter.ref = f"A4:{L(len(cols(kind)))}2000"
     ws.sheet_view.showGridLines = False
     return ws
 
@@ -225,12 +241,14 @@ def add(cfg, path, items, kind="academic"):
         vals = [today, x.get("fit"), x.get("employer"), x.get("position"),
                 x.get("category") if kind == "industry" else x.get("track"), x.get("type"),
                 x.get("location"), dl, x.get("why"), flags, x.get("source"), x.get("url"), None]
+        if kind != "industry":
+            vals.append(x.get("carnegie"))
         for i, v in enumerate(vals, start=1):
             c = ws.cell(row=r, column=i, value=v)
             c.font = Font(name=FONT, size=10)
             c.border = BD
             c.alignment = Alignment(wrap_text=True, vertical="top",
-                                    horizontal="center" if i in (1, 2, 5, 8, 11, 13) else None)
+                                    horizontal="center" if i in (1, 2, 5, 8, 11, 13, 14) else None)
         ws.cell(row=r, column=1).number_format = "mmm d"
         ws.cell(row=r, column=8).number_format = "mmm d, yyyy"
         if x.get("url"):

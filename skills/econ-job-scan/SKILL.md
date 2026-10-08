@@ -93,7 +93,9 @@ by hand. Use WebFetch only for High/Medium ads whose text is too short to judge.
 4. Write `scan_eval.json`: a list of objects with `id, url, source, employer, position,
    track` (Academic or Government / Policy), `type` (Tenure-track, Teaching-focused,
    Fed / Central bank, Government, Think tank / Research, Other), `location, deadline,
-   fit, why, flags, also_at` (`also_at` = a list of links, `[]` if none). `why` = one plain sentence tying the ad to the user's work
+   fit, why, flags, also_at, carnegie` (`also_at` = a list of links, `[]` if none; `carnegie` = the
+   school's 2025 Carnegie Research Activity Designation, R1 / R2 / RCU, "—" for a US school with
+   none, "Non-US", or "Non-academic"; check the Carnegie list, never guess). `why` = one plain sentence tying the ad to the user's work
    (e.g. "Open field; applied micro group; teaches econometrics"). `flags` = concrete
    cautions (visa wording, required diversity statement, language, "Nov 21 is full-consideration
    date", non-US system). Put the visa flag first. Write dates, never relative time ("Deadline
