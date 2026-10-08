@@ -24,7 +24,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter as L
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from common import close_in_excel, jm_path, load_config, reopen_in_excel, restore_dropdowns
+from common import close_in_excel, ensure_date_column, jm_path, load_config, reopen_in_excel, restore_dropdowns
 
 COLS = [("Found", 11), ("Fit", 8), ("Employer", 26), ("Position", 30), ("Track", 12), ("Type", 15),
         ("Location", 16), ("Deadline", 11), ("Why", 44), ("Flags", 26), ("Source", 7), ("Link", 22),
@@ -228,8 +228,14 @@ def promote(cfg, path):
         text = texts.get(g(12), "")
         # academic and policy ads nearly always want letters; say No only if a full ad never mentions them
         letters = "No" if len(text) > 1500 and not re.search(r"letter|referee|reference|recommend", text, re.I) else "Yes"
+        # "Review begins <date>" / "until filled": that date is when letters are due, not an application deadline
+        review = re.search(r"deadline note:[^;|]*(review|until filled)", str(g(10) or ""), re.I)
+        deadline, due = (None, g(8)) if review else (g(8), None)
+        if due and letters == "Yes" and "Letters Due" not in H:
+            H["Letters Due"] = ensure_date_column(tr, "Letters Due")
         row = {"Track": g(5), "Employer": g(3), "Position": g(4), "Type": type_map.get(g(6), "Other"),
-               "Apply Via": apply_via(g(12), text), "Link": g(12), "Deadline": g(8), "Status": "Not started",
+               "Apply Via": apply_via(g(12), text), "Link": g(12), "Deadline": deadline,
+               "Letters Due": due if letters == "Yes" else None, "Status": "Not started",
                "Cover Letter": "To write", "Letters?": letters,
                "Notes": (f"From scan ({g(2)} fit): {g(9) or ''} | {g(10) or ''} | Apply Via and Letters? "
                          f"guessed from the ad; check.").strip()}
@@ -237,14 +243,17 @@ def promote(cfg, path):
             if h in H and v not in (None, ""):
                 c = tr.cell(row=nxt, column=H[h], value=v)
                 c.font = Font(name=FONT, size=10)
-        if g(8):
-            tr.cell(row=nxt, column=H["Deadline"]).number_format = "mmm d, yyyy"
+        for h in ("Deadline", "Letters Due"):
+            if h in H and row[h]:
+                tr.cell(row=nxt, column=H[h]).number_format = "mmm d, yyyy"
         if g(12):
             tr.cell(row=nxt, column=H["Link"]).hyperlink = g(12)
             tr.cell(row=nxt, column=H["Link"]).font = Font(name=FONT, size=10, color="0563C1", underline="single")
         lead.cell(row=r, column=13, value="Added")
         moved.append(g(3))
         nxt += 1
+        while tr.cell(row=nxt, column=H["Employer"]).value not in (None, ""):   # never write over a row
+            nxt += 1
     synced = sync_added(lead, tr)
     restore_dropdowns(wb, cfg["letter_writers"])
     wb.save(path)

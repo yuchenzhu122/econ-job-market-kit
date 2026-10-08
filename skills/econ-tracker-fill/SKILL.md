@@ -34,12 +34,13 @@ a confirmation email says that writer's letter arrived; never fill or change the
    - Track: Academic / Industry / Government / Policy.
    - Type: closest value in `Lists`.
    - Apply Via: where the ad says to apply (a value from `Lists`).
-   - Deadline: the stated deadline as a real date. If the ad says "review begins <date>"
-     or "until filled", use the review date and note it. No date at all: leave blank, note it.
+   - Deadline: the user's application deadline, i.e. the deadline the ad states, as a real date.
+     If the ad only says "review begins <date>" or "until filled", leave Deadline blank (that
+     date goes in Letters Due) and note it. No date at all: leave blank, note it.
    - Letters Due (only when Letters? = Yes): the date letters must be in, which the user takes
      to be when review begins. Use a separately stated letter deadline if there is one, else the
-     "review begins / applications reviewed starting" date, else leave blank (the writers' list
-     then shows the Deadline). Older trackers may lack the column: add it first with
+     "review begins / applications reviewed starting" date, else leave blank (never copy the
+     Deadline; the writers' list shows it blank). Older trackers may lack the column: add it first with
      `ensure_date_column(ws, "Letters Due")` from `<repo>/scripts/common.py`.
      Rows already filled get Letters Due only when the user asks ("fill Letters Due", "补 Letters Due", "补 Due"):
      then re-read the links of rows with Letters? = Yes and an empty Letters Due.
@@ -75,7 +76,7 @@ Rejected / Withdrawn, soonest deadline first) to `letter_share_file` (a read-onl
 and, if `letter_share_gsheet` is set, to that Google Sheet, which the writers edit. Columns:
 
 - From the tracker, rewritten on every refresh: #, Deadline, Employer, Position, Type, Submit
-  Letter Via, Link, Status, I Applied On, Letters Due (from the tracker, or Deadline if blank). To change these, change the tracker, not the sheet.
+  Letter Via, Link, Status, I Applied On, Letters Due (from the tracker; blank until known). To change these, change the tracker, not the sheet.
 - Filled by hand, read back and kept on every refresh (matched by Link, else Employer +
   Position): one status column per writer (Sent / Waiting, filled by the writers), then
   "<user's first name> Comments" and "<writer> Comments" for each writer. Never write into these

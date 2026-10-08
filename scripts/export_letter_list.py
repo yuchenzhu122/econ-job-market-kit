@@ -8,7 +8,8 @@ Google Drive). Share that file's link once with your letter writers; re-running 
 overwrites the same file, so the link keeps working and always shows the latest list.
 Only the columns writers need are copied (deadline, type of job, where to submit, link, your
 status, the date you applied, and when letters are due), plus one column per writer; notes stay private.
-Letters Due comes from the tracker's Letters Due column, or the Deadline when that is blank.
+Letters Due comes from the tracker's Letters Due column (blank until known); Deadline is the
+application deadline.
 
 After those come the hand-filled columns: each writer's status (Sent / Waiting), then the comments,
 "<your first name> Comments" and "<writer> Comments" for each writer, filled in by hand in the
@@ -146,7 +147,7 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
         d = get("Deadline")
         if isinstance(d, dt.datetime):
             d = d.date()
-        due = (get("Letters Due") if "Letters Due" in hdr else None) or d
+        due = get("Letters Due") if "Letters Due" in hdr else None
         if isinstance(due, dt.datetime):
             due = due.date()
         sub = get("Submitted") if "Submitted" in hdr else None
