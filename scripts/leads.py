@@ -228,9 +228,9 @@ def promote(cfg, path):
         text = texts.get(g(12), "")
         # academic and policy ads nearly always want letters; say No only if a full ad never mentions them
         letters = "No" if len(text) > 1500 and not re.search(r"letter|referee|reference|recommend", text, re.I) else "Yes"
-        # "Review begins <date>" / "until filled": apply by that date, and letters are due then too
-        review = re.search(r"deadline note:[^;|]*(review|until filled)", str(g(10) or ""), re.I)
-        deadline, due = g(8), (g(8) if review else None)
+        # Letters Due only when the ad says by when materials should be received; a review date alone is just the Deadline
+        received = re.search(r"deadline note:[^;|]*(received|consideration|letters? by|submitted by)", str(g(10) or ""), re.I)
+        deadline, due = g(8), (g(8) if received else None)
         if due and letters == "Yes" and "Letters Due" not in H:
             H["Letters Due"] = ensure_date_column(tr, "Letters Due")
         row = {"Track": g(5), "Employer": g(3), "Position": g(4), "Type": type_map.get(g(6), "Other"),

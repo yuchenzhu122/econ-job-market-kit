@@ -72,7 +72,7 @@ cols = [  # header, width, kind, note
     ("Apply Via", 18, "in", "Where you submit (letter writers also upload here)"),
     ("Link", 24, "link", None),
     ("Deadline", 12, "date", "The date you apply by: the earliest date in the ad (review begins, priority date or deadline)."),
-    ("Letters Due", 12, "date", "When letters should be in (also on the writers' list): the later 'full consideration' date if the ad gives two dates, the review date if it gives only that. Blank until known."),
+    ("Letters Due", 12, "date", "When letters should be in (also on the writers' list): only when the ad says by when materials should be received (e.g. full consideration by). Blank = not known."),
     ("Days Left", 9, "auto", "Automatic. Red = 7 days or less. Disappears once Status is Submitted."),
     ("Status", 13, "in", None),
     ("Submitted", 12, "date", "Date you submitted. Type it yourself, or let the optional mail check fill it from confirmation emails."),
