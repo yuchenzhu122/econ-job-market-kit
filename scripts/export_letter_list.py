@@ -6,8 +6,8 @@ Reads the Tracker sheet, keeps rows with Letters? = Yes (skipping Withdrawn/Reje
 separate, read-only-style workbook to config["letter_share_file"] (e.g. a file in OneDrive or
 Google Drive). Share that file's link once with your letter writers; re-running this script
 overwrites the same file, so the link keeps working and always shows the latest list.
-Only the columns writers need are copied (deadline, when letters are due, type of job, where to
-submit, link, your status and the date you applied), plus one column per writer; notes stay private.
+Only the columns writers need are copied (deadline, type of job, where to submit, link, your
+status, the date you applied, and when letters are due), plus one column per writer; notes stay private.
 Due is the tracker's Letters Due, or the Deadline when that is blank.
 
 After those come the hand-filled columns: each writer's status (Sent / Waiting), then the comments,
@@ -184,9 +184,9 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
     sh["A2"].font = Font(name=FONT, size=10, italic=True, color="555555")
     # no formulas: the file is mostly viewed in a browser preview (Dropbox/OneDrive), which does not
     # recalculate them, so a "Days Left" formula would show up blank
-    cols = [("#", 5), ("Deadline", 13), ("Due", 13), ("Employer", 30), ("Position", 32), ("Type", 16),
-            ("Submit Letter Via", 20), ("Link", 30), ("Status", 13), ("I Applied On", 13)]
-    LINK, STATUS, DATES = 8, 9, (2, 3, 10)
+    cols = [("#", 5), ("Deadline", 13), ("Employer", 30), ("Position", 32), ("Type", 16),
+            ("Submit Letter Via", 20), ("Link", 30), ("Status", 13), ("I Applied On", 13), ("Due", 13)]
+    LINK, STATUS, DATES = 7, 8, (2, 9, 10)
     HAND = [(len(cols) + 1 + i, kind, who) for i, (_, _, kind, who) in enumerate(hand_columns(cfg))]
     cols += [(h, w) for h, w, *_ in hand_columns(cfg)]
     WCOLS = [c for c, kind, _ in HAND if kind == "status"]
@@ -194,7 +194,7 @@ def _write(cfg, src, dst, hand, prev, gsheet_ok):
         c = sh.cell(row=4, column=i, value=h)
         c.font = fh; c.fill = PatternFill("solid", fgColor=accent); c.alignment = ctr; c.border = bd
         sh.column_dimensions[L(i)].width = w
-    table = [[k, x["Deadline"], x["Due"], x["Employer"], x["Position"], x["Type"], x["Apply Via"], x["Link"], x["Status"], x["Submitted"]]
+    table = [[k, x["Deadline"], x["Employer"], x["Position"], x["Type"], x["Apply Via"], x["Link"], x["Status"], x["Submitted"], x["Due"]]
              + [x[h] for h in hand] for k, x in enumerate(rows, start=1)]
     for k, (x, vals) in enumerate(zip(rows, table), start=1):
         r = 4 + k

@@ -74,8 +74,8 @@ The tracker is private and never shared. The letter writers see only this list.
 Rejected / Withdrawn, soonest deadline first) to `letter_share_file` (a read-only Excel backup)
 and, if `letter_share_gsheet` is set, to that Google Sheet, which the writers edit. Columns:
 
-- From the tracker, rewritten on every refresh: #, Deadline, Due (Letters Due, or Deadline if
-  blank), Employer, Position, Type, Submit Letter Via, Link, Status, I Applied On. To change these, change the tracker, not the sheet.
+- From the tracker, rewritten on every refresh: #, Deadline, Employer, Position, Type, Submit
+  Letter Via, Link, Status, I Applied On, Due (Letters Due, or Deadline if blank). To change these, change the tracker, not the sheet.
 - Filled by hand, read back and kept on every refresh (matched by Link, else Employer +
   Position): one status column per writer (Sent / Waiting, filled by the writers), then
   "<user's first name> Comments" and "<writer> Comments" for each writer. Never write into these
