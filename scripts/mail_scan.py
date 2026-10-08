@@ -6,7 +6,9 @@ to the tracker.
   python3 scripts/mail_scan.py apply <file>     # write matches into the tracker, refresh the letter list
 
 Reads the mailboxes named in config.json "mail" ({"account": ..., "mailboxes": [...], "days": ...};
-e.g. Inbox plus Clutter and Junk Email, where automatic confirmations sometimes land)
+e.g. Inbox plus Clutter and Junk Email, where automatic confirmations sometimes land), plus any
+"more_accounts" ([{"account": ..., "mailboxes": [...]}], e.g. a separate address used for industry
+applications)
 through the Mail app that is already signed in on this Mac (no passwords). Only messages whose
 sender or subject looks like an application system or a letter notification are opened; the rest
 are skipped, and senders matching "skip_senders" (e.g. your own university's domain, so personal
@@ -85,6 +87,16 @@ return out''')
     return rows
 
 
+def accounts(m):
+    """[(account, settings)]: the main "account" plus any "more_accounts" (each with its own mailboxes;
+    days and skip_senders default to the main settings)."""
+    out = [(m["account"], m)]
+    for a in m.get("more_accounts") or []:
+        if a.get("account") and not a["account"].startswith("<"):
+            out.append((a["account"], {**m, **a}))
+    return out
+
+
 def mailboxes(m):
     """Mailboxes to read: "mailboxes" (list) or the older single "mailbox"; missing ones are skipped."""
     return m.get("mailboxes") or [m.get("mailbox", "Inbox")]
@@ -138,21 +150,25 @@ def fetch(cfg):
     tracker, new_path, state_path = paths(cfg)
     state = json.load(open(state_path)) if os.path.exists(state_path) else {"seen": []}
     seen = set(state["seen"])
-    hs = []
-    for box in mailboxes(m):
-        try:
-            hs += [h for h in headers(m["account"], box, m.get("days", 7)) if h["id"] not in seen]
-        except SystemExit as e:          # e.g. a Clutter folder that this account does not have
-            print(f"skipped mailbox {box}: {e}")
-    skip = [x.lower() for x in m.get("skip_senders", [])]
-    cand = [h for h in hs if LOOKS.search(h["sender"] + " " + h["subject"]) and not NOISE.search(h["subject"])
-            and not any(x in h["sender"].lower() for x in skip)]
+    hs, cand = [], []
+    for acct, a in accounts(m):
+        got = []
+        for box in mailboxes(a):
+            try:
+                got += [{**h, "account": acct} for h in headers(acct, box, a.get("days", 7)) if h["id"] not in seen]
+            except SystemExit as e:          # e.g. a Clutter folder that this account does not have
+                print(f"skipped mailbox {acct} / {box}: {e}")
+        skip = [x.lower() for x in a.get("skip_senders", [])]
+        cand += [h for h in got if LOOKS.search(h["sender"] + " " + h["subject"]) and not NOISE.search(h["subject"])
+                 and not any(x in h["sender"].lower() for x in skip)]
+        hs += got
     for h in cand:
-        h["text"] = body(m["account"], h["mailbox"], h["idx"], h["id"])
+        h["text"] = body(h["account"], h["mailbox"], h["idx"], h["id"])
     data = {"date": dt.date.today().isoformat(), "checked": [h["id"] for h in hs],
             "messages": cand, "tracker": [t for k, p in trackers(cfg) for t in tracker_rows(p, k)]}
     json.dump(data, open(new_path, "w"), indent=1, ensure_ascii=False)
-    print(f"{len(hs)} new emails in the last {m.get('days', 7)} days ({', '.join(mailboxes(m))}), {len(cand)} look application-related "
+    where = "; ".join(f"{acct}: {', '.join(mailboxes(a))}" for acct, a in accounts(m))
+    print(f"{len(hs)} new emails in the last {m.get('days', 7)} days ({where}), {len(cand)} look application-related "
           f"-> {new_path}")
 
 
@@ -165,7 +181,7 @@ def show(cfg):
               f"{' | submitted ' + t['submitted'] if t['submitted'] else ''}")
     print(f"\nEMAILS ({len(d['messages'])})")
     for i, mm in enumerate(d["messages"]):
-        print(f"\n#{i} {mm['date']} | {mm.get('mailbox', 'Inbox')} | {mm['sender']} | {mm['subject']}\n   {mm['text'][:1500]}")
+        print(f"\n#{i} {mm['date']} | {mm.get('account', '')} {mm.get('mailbox', 'Inbox')} | {mm['sender']} | {mm['subject']}\n   {mm['text'][:1500]}")
 
 
 def apply(cfg, upd_path):

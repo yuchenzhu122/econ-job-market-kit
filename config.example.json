@@ -109,11 +109,15 @@
       "Inbox",
       "Clutter",
       "Junk Email"
+    ],
+    "more_accounts": [
+      {"_comment": "Optional: another Mail.app account to read, e.g. the address you use for industry applications. Gmail folders: INBOX, [Gmail]/Spam (or the localized name).", "account": "<Mail.app account name, e.g. Google>", "mailboxes": ["INBOX"]}
     ]
   },
   "industry": {
     "_comment": "Industry search. categories: a title must contain one of the words (case-insensitive); exclude_titles drop a posting. companies: career pages read through their public job APIs. alert_mail: LinkedIn / Indeed job-alert emails in the Mail app.",
     "dir": "~/Dropbox/Job Market/Industry 2026-27",
+    "email": "<optional: email for industry applications and letters; default is the main email>",
     "tracker_file": "08_Applications/Industry_Application_Tracker.xlsx",
     "wants": "<which industry roles you want, in order of priority; locations; what to exclude>",
     "categories": {

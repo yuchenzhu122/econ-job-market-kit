@@ -74,10 +74,11 @@ def main():
     if a.address:
         recipient += "\\\\\n" + tex_escape(a.address)
 
+    email = ((cfg.get("industry") or {}).get("email") if ind else None) or cfg["email"]   # optional job-search address
     tex = letterhead(cfg) + r"""\setlength{\parskip}{8pt}
 \linespread{1.05}
 \begin{document}
-{\LARGE\bfseries """ + cfg["name"] + r"""}\hfill \href{mailto:""" + cfg["email"] + "}{" + cfg["email"] + r"""}\\[2pt]
+{\LARGE\bfseries """ + cfg["name"] + r"""}\hfill \href{mailto:""" + email + "}{" + email + r"""}\\[2pt]
 """ + tex_escape(cfg["department"]) + ", " + tex_escape(cfg["city"]) + r"""\hfill \href{https://""" + cfg["website"] + "}{" + cfg["website"] + r"""}\\[-4pt]
 {\color{accent}\rule{\textwidth}{0.6pt}}
 
