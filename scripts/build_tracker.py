@@ -71,7 +71,7 @@ cols = [  # header, width, kind, note
     ("Type", 16, "in", "Optional"),
     ("Apply Via", 18, "in", "Where you submit (letter writers also upload here)"),
     ("Link", 24, "link", None),
-    ("Deadline", 12, "date", "Application deadline as stated in the ad. Blank if the ad only says when review begins."),
+    ("Deadline", 12, "date", "Your application deadline. If the ad only says when review begins, that date (Letters Due gets it too)."),
     ("Letters Due", 12, "date", "When letters should be in, usually when review begins (also shown on the writers' list). Blank until known."),
     ("Days Left", 9, "auto", "Automatic. Red = 7 days or less. Disappears once Status is Submitted."),
     ("Status", 13, "in", None),

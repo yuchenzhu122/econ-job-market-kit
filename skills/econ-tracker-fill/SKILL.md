@@ -35,12 +35,13 @@ a confirmation email says that writer's letter arrived; never fill or change the
    - Type: closest value in `Lists`.
    - Apply Via: where the ad says to apply (a value from `Lists`).
    - Deadline: the user's application deadline, i.e. the deadline the ad states, as a real date.
-     If the ad only says "review begins <date>" or "until filled", leave Deadline blank (that
-     date goes in Letters Due) and note it. No date at all: leave blank, note it.
+     If the ad only says "review begins <date>" or "until filled" with a review date, use that
+     date (the user applies by then) and note it. No date at all: leave blank, note it.
    - Letters Due (only when Letters? = Yes): the date letters must be in, which the user takes
      to be when review begins. Use a separately stated letter deadline if there is one, else the
-     "review begins / applications reviewed starting" date, else leave blank (never copy the
-     Deadline; the writers' list shows it blank). Older trackers may lack the column: add it first with
+     "review begins / applications reviewed starting" date (then Deadline and Letters Due are the
+     same date), else leave blank (do not copy an ordinary stated Deadline; the writers' list shows
+     it blank). Older trackers may lack the column: add it first with
      `ensure_date_column(ws, "Letters Due")` from `<repo>/scripts/common.py`.
      Rows already filled get Letters Due only when the user asks ("fill Letters Due", "补 Letters Due", "补 Due"):
      then re-read the links of rows with Letters? = Yes and an empty Letters Due.

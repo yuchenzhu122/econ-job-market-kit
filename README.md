@@ -57,7 +57,7 @@ In `config.json` set:
    Decision = Add for the ones you want, then click **▶ Update Tracker** (or say "add my leads to
    the tracker"). You can also paste links into the Tracker yourself.
 2. **Fill the rows.** Say "fill the tracker": Claude reads each posting and fills the application
-   deadline, Letters Due (usually when review begins), where to apply, letters, extra materials and visa notes, without overwriting what you typed.
+   deadline, Letters Due (usually when review begins; if the ad gives only a review date, both get it), where to apply, letters, extra materials and visa notes, without overwriting what you typed.
 3. **Write letters.** Say "write the cover letter for <Employer>". You review the PDF and set Final.
 4. **Submit** on the employer's site yourself.
 5. **Record submissions.** Set Status to Submitted, type the date in Submitted, and click
@@ -202,7 +202,7 @@ To turn it off, empty `letter_share_gsheet`. Claude can walk you through the set
 **2. 追踪表**
 
 - 在 Leads 页把想投的选 Add，点表格顶部的 **▶ Update Tracker**（或跟 Claude 说"把 leads 加到追踪表"），就会进主表 Tracker。Excel 开着也没关系。
-- 跟 Claude 说"补全追踪表"，它会读每个广告，填申请截止日期（Deadline）、推荐信截止日（Letters Due，一般是开始审核的日期；广告只写开始审核时 Deadline 留空）、投递平台、要不要推荐信、额外材料、签证说明，不会覆盖你自己填的内容。
+- 跟 Claude 说"补全追踪表"，它会读每个广告，填申请截止日期（Deadline）、推荐信截止日（Letters Due，一般是开始审核的日期；广告只写开始审核时，两列都填这个日期）、投递平台、要不要推荐信、额外材料、签证说明，不会覆盖你自己填的内容。
 - 按钮的一次性设置（Mac）：在"快捷指令"App 新建一个叫 `Update Tracker` 的快捷指令，加"运行 Shell 脚本"动作，内容是 `<python3 完整路径> "$HOME/econ-job-market-kit/scripts/update_tracker.py"`（用 `which python3` 查路径），并在 设置 › 高级 里勾选"允许运行脚本"。
 
 **3. Cover letter（两套模板）**
