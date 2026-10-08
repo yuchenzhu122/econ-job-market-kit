@@ -8,7 +8,8 @@
 --variant teaching   teaching first, up to two pages (liberal arts colleges, teaching-focused jobs)
 See skills/econ-cover-letter/templates.md for what each paragraph does.
 
-Shared paragraphs come from config.json ("cover_letter"); only --fit is new per letter.
+Shared paragraphs come from config.json ("cover_letter"); only --fit (and --enclosures, to match
+the materials the posting asks for) changes per letter.
 Without --fit, a highlighted placeholder is inserted. Output: <job_market_dir>/<cover_letter_dir>/CL_<Employer>.pdf
 """
 import argparse
@@ -33,6 +34,9 @@ def main():
     ap.add_argument("--fit", default="")
     ap.add_argument("--address", default="")
     ap.add_argument("--tag", default="", help="added to the file name when one employer has several letters")
+    ap.add_argument("--enclosures", default="",
+                    help='what is actually attached, e.g. "CV, job market paper, and teaching evaluations"; '
+                         'replaces the "I have enclosed ..." sentence of the closing')
     a = ap.parse_args()
     cfg = load_config()
 
@@ -45,6 +49,10 @@ def main():
     if missing:
         raise SystemExit(f"config.json cover_letter is missing {missing} (needed for --variant {a.variant})")
     body = [fit if k == "fit" else paras[k].format(**fill) for k in ORDER[a.variant]]
+    if a.enclosures.strip():
+        body[-1], n = re.subn(r"^I have enclosed [^.]*\.", lambda m: "I have enclosed my " + tex_escape(a.enclosures.strip()) + ".", body[-1])
+        if not n:
+            raise SystemExit("closing paragraph does not start with 'I have enclosed ...'; edit it by hand")
     recipient = "Search Committee\\\\\n" + fill["dept"] + "\\\\\n" + fill["employer"]
     if a.address:
         recipient += "\\\\\n" + tex_escape(a.address)

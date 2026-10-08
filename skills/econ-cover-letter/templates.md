@@ -16,7 +16,7 @@ JMP topic, and that you would welcome an interview), with real tailoring only fo
 | 2 | `jmp` | Question, data and method, main findings, why it matters. |
 | 3 | `other_research` | One or two other papers, coauthors named, one result each. |
 | 4 | `teaching` | Short credibility signal: instructor of record, evaluations, courses you can teach. |
-| 5 | fit | 1 to 3 sentences, only where there is a real match: a field the ad names, a group or center listed on the department site, a course need. Skip the paragraph rather than write a generic one. |
+| 5 | fit | 2 to 3 sentences (under ~60 words, to stay on one page) built from the requirement map (SKILL.md step 2a): the strongest real match first (a field the ad names or "particularly" wants, a group or center on the department site), then the duties or criteria the ad stresses that the other paragraphs do not cover. Skip a point rather than write a generic sentence. |
 | 6 | `closing` | Enclosures, letter writers, thanks. |
 
 ## B. Teaching-focused (liberal arts colleges, regional universities, teaching tracks, community colleges)
@@ -43,6 +43,9 @@ research is condensed and tied to students. Up to two pages is normal.
 - Name specific things (a course title, a center, the load, a program) instead of praise
   ("prestigious", "vibrant"). One faculty name at most, only as shared interest, only from the
   department's site.
+- Read the whole job description (including the employer's HR page and position
+  description) and build the requirement map before writing; every sentence in the fit
+  paragraph should answer a specific line of the ad.
 - Use the ad's own key words where they are true of the candidate (e.g. "applied learning",
   "large-enrollment courses", "data analytics"), without copying whole phrases.
 - If the ad asks the letter to address something (inclusive teaching, a specific field, start
