@@ -133,6 +133,7 @@ else:
     ("Employer", 28, "in", None),
     ("Position", 28, "in", None),
     ("Type", 16, "in", "Optional"),
+    ("Field", 20, "in", "Fields the ad asks for, e.g. 'Any field' or 'Labor; Applied Micro' (also on the writers' list)."),
     ("Apply Via", 18, "in", "Where you submit (letter writers also upload here)"),
     ("Link", 24, "link", None),
     ("Deadline", 12, "date", "The date you apply by: the earliest date in the ad (review begins, priority date or deadline)."),

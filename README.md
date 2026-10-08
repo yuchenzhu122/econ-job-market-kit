@@ -286,7 +286,8 @@ from recruiters at Analysis Group, Google and the Cleveland Fed. Details and dat
 ## Letter writers' list (academic and industry)
 
 `export_letter_list.py` builds the only thing you share (the trackers stay private): every
-position in either tracker with Letters? = Yes, soonest deadline first, with type of job, deadline,
+position in either tracker with Letters? = Yes, soonest deadline first, with type of job, the
+fields the ad asks for (Field), deadline,
 where to submit, link, your status, the date you applied, and when letters are due (Letters Due:
 filled only when the ad says by when materials should be received, otherwise blank), then a status
 column per writer (Sent / Waiting) and Comments columns for you and each writer.
@@ -435,7 +436,7 @@ and Leads sheets runs it.
 
 - 只分享这份清单，追踪表始终是你自己的，不给任何人。两张追踪表里 Letters? = Yes 的岗位都会进来，按截止日期排序；Type 列能看出是学界还是业界（比如 Consulting、Tech）。
 - **要手动改清单上的日期（截止日期、Letters Due、I Applied On），请在自己的 Tracker 里改** Deadline、Letters Due、Submitted 这几列，再点 ▶ Update Tracker。Tracker 里你手写的永远优先，Claude 只填空格子。直接在清单（包括 Google Sheet）里改这些列，下次刷新会被覆盖。
-- 列：岗位、工作类型（Type）、截止日期、从哪交、广告链接、你的进展（Status）、你哪天提交的（I Applied On）、Letters Due（广告写明材料某天前要收到时才有，否则空着）；然后每位老师一列 Sent / Waiting，最后是你和每位老师的 Comments。
+- 列：岗位、工作类型（Type）、招的领域（Field）、截止日期、从哪交、广告链接、你的进展（Status）、你哪天提交的（I Applied On）、Letters Due（广告写明材料某天前要收到时才有，否则空着）；然后每位老师一列 Sent / Waiting，最后是你和每位老师的 Comments。
 - 默认：生成一个 Excel，放在共享网盘里，用"可编辑"权限分享一次链接。只有老师状态和 Comments 几列能改，其他列锁定；老师填的内容每次刷新都会读回来保留。邮件确认某位老师的信已收到时，那一栏自动变成 Received。有人 10 分钟内刚改过文件时，这次刷新会跳过；Dropbox 万一生成"冲突副本"，里面填的内容也会自动合并回来。
 - **可选：Google Sheet**。老师同样可以在里面标 Sent / Waiting、写 Comments，内容每次刷新都保留并跟着对应岗位走；其他列每次按追踪表重写，受保护。Excel 照样生成作备份；Google 连不上时表格不动，其他更新照常。设置（一次，约 10 分钟）：在 Google Cloud 建项目、启用 Google Sheets API、建 service account 并下载 JSON 密钥，放到 `google_credentials` 指的位置；在自己的 Google Drive 新建空表，共享给密钥里的 `client_email`（编辑者）；把表格链接填进 `letter_share_gsheet`，`pip3 install gspread`；运行一次 `export_letter_list.py`，再把表以"编辑者"权限分享给老师。也可以跟 Claude 说"设置 Google Sheet"。
 

@@ -1,6 +1,6 @@
 ---
 name: econ-tracker-fill
-description: Fill in an economics job market application tracker from posting links. Use when the user says "fill the tracker", "补全追踪表", "read the links in my tracker", or has pasted job links into the tracker's Link column and wants the rest of each row completed. Also use for "update the letter list", "更新老师那页", "refresh the letter writers' file", and for setting up the letter writers' Google Sheet ("set up the Google Sheet", "设置Google Sheet"). Reads each posting and fills Employer, Position, Type, Track, Apply Via, Deadline, Letters Due, Letters?, Still Need, Notes. Does not write cover letters (that is econ-cover-letter).
+description: Fill in an economics job market application tracker from posting links. Use when the user says "fill the tracker", "补全追踪表", "read the links in my tracker", or has pasted job links into the tracker's Link column and wants the rest of each row completed. Also use for "update the letter list", "更新老师那页", "refresh the letter writers' file", and for setting up the letter writers' Google Sheet ("set up the Google Sheet", "设置Google Sheet"). Reads each posting and fills Employer, Position, Type, Field, Track, Apply Via, Deadline, Letters Due, Letters?, Still Need, Notes. Does not write cover letters (that is econ-cover-letter).
 ---
 
 # Fill tracker rows from posting links
@@ -28,7 +28,7 @@ and go up two levels. Read `<repo>/config.json`:
 For rows of the industry tracker (`industry.dir`), use the econ-industry-apply skill instead.
 
 Tracker layout (built by `scripts/build_tracker.py`): sheet `Tracker`, headers in row 4,
-data from row 5. Columns: Track, Employer, Position, Type, Apply Via, Link, Deadline,
+data from row 5. Columns: Track, Employer, Position, Type, Field, Apply Via, Link, Deadline,
 Letters Due, Days Left (formula), Status, Still Need, Cover Letter, Letters?, one column per letter
 writer, Notes. Dropdown values come from the `Lists` sheet; only write values listed there.
 The writer columns hold "Received" and are filled only by the mail check (econ-mail-check) when
@@ -46,6 +46,11 @@ a confirmation email says that writer's letter arrived; never fill or change the
    - Employer and Position (exact title; add the field in parentheses if the ad names one).
    - Track: Academic / Industry / Government / Policy.
    - Type: closest value in `Lists`.
+   - Field: the fields the ad asks for, short and in the ad's terms (JOE/EJM field or JEL
+     list, or the ad text): "Any field", "Labor; Applied Micro", "Any field (econometrics,
+     international trade preferred)". Teaching-only ads that name no field: "Any field". Older
+     trackers may lack the column: add it with `ensure_text_column(ws, "Field")` from
+     `<repo>/scripts/common.py`. It is shown on the writers' list so they can tailor letters.
    - Apply Via: where the ad says to apply (a value from `Lists`).
    - Deadline: the date the user applies by, as a real date: the EARLIEST date the ad gives
      (review begins, priority date, or the application deadline), ignoring posting close /
@@ -81,7 +86,7 @@ a confirmation email says that writer's letter arrived; never fill or change the
    `letter_share_file` from config.json (the file the letter writers have a link to), and the Google
    Sheet in `letter_share_gsheet` if one is set. Pass on any "Google Sheet not updated" warning.
 6. **Report** (in the user's language): a short table of filled rows (Employer, Position,
-   Deadline, Letters Due, Apply Via, Letters?, Still Need), rows you could not read and why, and what to
+   Field, Deadline, Letters Due, Apply Via, Letters?, Still Need), rows you could not read and why, and what to
    double-check (inferred deadlines, ambiguous Type). Offer to draft cover letters.
 
 ## The shared letter list

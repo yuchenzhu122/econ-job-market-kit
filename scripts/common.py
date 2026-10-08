@@ -257,6 +257,26 @@ def ensure_submitted_column(ws):
     return ensure_date_column(ws, "Submitted")
 
 
+def ensure_text_column(ws, name, width=22):
+    """Add a plain text column (e.g. 'Field') at the right edge of an older Tracker sheet if it is
+    missing. Returns its index."""
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter as L
+    H = tracker_headers(ws)
+    if name in H:
+        return H[name]
+    col = max(H.values()) + 1
+    src = ws.cell(row=4, column=H["Position"])
+    c = ws.cell(row=4, column=col, value=name)
+    c.font = Font(name=src.font.name, size=src.font.sz, bold=True, color=src.font.color.rgb if src.font.color else None)
+    c.fill = PatternFill("solid", fgColor=src.fill.fgColor.rgb)
+    c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.column_dimensions[L(col)].width = width
+    for r in range(5, 155):
+        ws.cell(row=r, column=col).alignment = Alignment(wrap_text=True, vertical="top")
+    return col
+
+
 def ensure_date_column(ws, name):
     """Add a date column (e.g. 'Submitted', 'Letters Due') at the right edge of an older Tracker
     sheet if it is missing. Returns its index."""
