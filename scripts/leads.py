@@ -291,11 +291,17 @@ PLATFORMS = [("econjobmarket", "EconJobMarket"), ("academicjobsonline", "Academi
 def ad_texts(cfg, kind="academic"):
     """url -> ad text from the last scan, used to guess where to apply."""
     import os
-    p = os.path.join(os.path.dirname(tracker_path(cfg, kind)), "industry_scan_new.json" if kind == "industry" else "scan_new.json")
-    try:
-        return {x["url"]: x.get("text", "") for x in json.load(open(p, encoding="utf-8"))["candidates"]}
-    except (OSError, ValueError, KeyError):
-        return {}
+    paths = [os.path.join(os.path.dirname(tracker_path(cfg, "academic")), "scan_new.json")]
+    if kind == "industry":      # industry jobs come from the industry scan and from JOE (academic scan file)
+        paths.insert(0, os.path.join(os.path.dirname(tracker_path(cfg, "industry")), "industry_scan_new.json"))
+    out = {}
+    for p in paths:
+        try:
+            for x in json.load(open(p, encoding="utf-8"))["candidates"]:
+                out.setdefault(x["url"], x.get("text", ""))
+        except (OSError, ValueError, KeyError):
+            pass
+    return out
 
 
 IND_PLATFORMS = [("myworkdayjobs", "Workday"), ("greenhouse", "Greenhouse"), ("lever.co", "Lever"),

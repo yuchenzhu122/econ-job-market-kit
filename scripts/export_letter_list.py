@@ -8,6 +8,7 @@ Google Drive). Share that file's link once with your letter writers; re-running 
 overwrites the same file, so the link keeps working and always shows the latest list.
 Only the columns writers need are copied (deadline, type of job, the fields the ad asks for, where to submit, link, your
 status, the date you applied, and when letters are due), plus one column per writer; notes stay private.
+Submit Letter Via is the tracker's optional Letters Via column, else Apply Via.
 Letters Due comes from the tracker's Letters Due column (blank until known); Deadline is the
 application deadline.
 
@@ -169,7 +170,9 @@ def _tracker_rows(cfg, src, hand, prev):
                 got[w] = "Received"
         rows.append({"Deadline": d, "Letters Due": due, "Submitted": sub, "Employer": emp, "Position": get("Position"), "Type": get("Type"),
                      "Field": field,
-                     "Apply Via": get("Apply Via"), "Link": get("Link"), "Status": status,
+                     # "Letters Via" (optional tracker column) when letters go somewhere other than the application
+                     "Apply Via": (get("Letters Via") if "Letters Via" in hdr else None) or get("Apply Via"),
+                     "Link": get("Link"), "Status": status,
                      **{h: got.get(h, "") for h in hand}})
     return rows
 
