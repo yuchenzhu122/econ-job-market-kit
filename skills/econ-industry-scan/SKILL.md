@@ -45,6 +45,9 @@ Write `industry_eval.json` with the Write tool; no ad-hoc scripts.
    them), drops excluded titles and anything already seen or in either tracker. If the scan finds
    0 alert emails although the user set alerts up, check the sender of one alert in Mail and add
    it to that board's `senders`.
+   Indeed's plain-text alerts carry only opaque tracking links (no job key): those postings come
+   with an empty `url` (id `IND-<hash of title and employer>`). Never open the tracking link; find
+   the public posting on the employer's own careers site (WebSearch / WebFetch) or rate from the email.
    Alert postings have no text, only the email's lines (`EMAIL:` in `show`): use them to fix
    title / employer, and read the full posting for those you rate High or Medium:
    LinkedIn and Indeed with WebFetch (public job pages); NABE's site blocks scripts, so use the

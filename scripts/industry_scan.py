@@ -199,6 +199,38 @@ def unwrap(u, pattern):
     return u
 
 
+AGE = re.compile(r"^(just posted|today|active \d+ days? ago|\d+\+? days? ago|posted \d+\+? days? ago)$", re.I)
+
+
+def indeed_blocks(body, msg):
+    """Indeed's plain-text alerts hide every job behind an opaque tracking link (no job key), so read
+    the blocks instead: title / "Company - Location" / [salary] / snippet / age / link. A one-job
+    "Title @ Company" recommendation email lists title, company and location above "View job:".
+    The tracking links are never opened; the url stays empty and Claude finds the public posting."""
+    import hashlib
+    out = []
+
+    def add(title, employer, location, context):
+        key = hashlib.sha1(f"{title}|{employer}".lower().encode()).hexdigest()[:10]
+        out.append({"id": f"IND-{key}", "url": "", "title": title, "employer": employer, "location": location,
+                    "posted": msg["date"], "text": "", "context": context[:400], "source": "IND",
+                    "alert": msg["subject"]})
+
+    for block in re.split(r"\n\s*\n", body):
+        ls = [re.sub(r"\s+", " ", l).strip() for l in block.splitlines() if l.strip()]
+        if len(ls) >= 4 and ls[-1].startswith("http") and AGE.match(ls[-2]) and " - " in ls[1]:
+            employer, location = ls[1].rsplit(" - ", 1)
+            add(ls[0], employer, location, " | ".join(ls[:-1]))
+    subj = msg.get("subject", "")
+    if not out and " @ " in subj and re.search(r"^View job:", body, re.M):
+        title, employer = subj.rsplit(" @ ", 1)
+        ls = [re.sub(r"\s+", " ", l).strip() for l in body.splitlines() if l.strip()]
+        i = next((k for k, l in enumerate(ls) if l == title.strip()), None)
+        location = ls[i + 2] if i is not None and i + 2 < len(ls) and ls[i + 1] == employer.strip() else ""
+        add(title.strip(), employer.strip(), location, " | ".join(ls[i:i + 6]) if i is not None else subj)
+    return out
+
+
 def alert_jobs(msg):
     """Postings listed in one alert email: each link to a job page of that board, its link text
     (HTML part) or the title / company / location lines printed above it (plain-text part), and a
@@ -219,6 +251,10 @@ def alert_jobs(msg):
         body = html.unescape(re.sub(r"<[^>]+>", "\n", re.sub(r"<br\s*/?>", "\n", body)))
     lines = [re.sub(r"\s+", " ", l).strip() for l in body.splitlines()]
     lines = [l for l in lines if l]
+    if b["code"] == "IND" and part is not None and part.get_content_type() == "text/plain":
+        found = indeed_blocks(body, msg)
+        if found:
+            return found
     out, seen = [], set()
     skip = re.compile(r"(view job|see job|apply|easy apply|new|promoted|actively recruiting|save)\b", re.I)
     for i, l in enumerate(lines):
