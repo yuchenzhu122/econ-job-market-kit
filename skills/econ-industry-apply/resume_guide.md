@@ -18,6 +18,14 @@ company and one role: read the posting, the team's or firm's own pages, and the 
   large panel data; DiD / event study, structural estimation, Python and SQL."
 - Projects as business problems: question → data and size → method → result as a number →
   what a decision-maker would do with it. Plain words first, technical name second.
+- Method keywords per project: 2–3 terms on the right of the project's second line (e.g.
+  "Machine Learning · Supervised Learning · Prediction", "Causal Inference · Difference-in-Differences ·
+  Policy Evaluation"). Recruiters and applicant tracking systems read them before the bullets.
+  For each job, pull the posting's terms that are close to what the project really does
+  ("Program Evaluation", "Classification", "Econometric Modeling"). Terms already in `06-skills.md`
+  can be used directly; for any other term, list it for the user with the project it would describe
+  and use it only if they agree (then add it to `06-skills.md`, dated). Never a term on the
+  do-not-claim list.
 - Skills: only `06-skills.md` words; mirror the posting's vocabulary where it is the same skill
   ("A/B testing" vs "experimentation"), since application systems screen on those words first;
   nothing from the do-not-claim list.

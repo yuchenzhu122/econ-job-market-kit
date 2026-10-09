@@ -45,7 +45,7 @@ The user maintains only My Materials. The academic and industry folders hold upl
    know (do-not-claim list in `06`, work-authorization wording, preferred name, locations).
    Copy `15-market-wisdom.md` from the template if missing.
 6. **Resume master** (if none): copy `<repo>/templates/resume/` to where the user wants it in
-   My Materials, fill it from the knowledge base (one page; projects with numbers), register its
+   My Materials, fill it from the knowledge base (one page; projects with numbers and 2–3 method keywords each), register its
    `main.tex` as `resume`, build with `python3 <repo>/scripts/make_resume.py --master`, check it is
    one page, and show it.
 7. Report: what was found, what was indexed, what is missing (with one line each on how to write

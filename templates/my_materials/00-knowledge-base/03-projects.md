@@ -10,4 +10,5 @@ the method, the finding in one number, and what a decision-maker would do with i
 - Main finding (one number):
 - So what for a business or policy decision:
 - Skills it shows (match the words in 06-skills.md):
+- Resume keywords (2–3 methods, shown next to the project on the resume; reworded per job toward the posting's terms):
 - 30-second non-technical version:

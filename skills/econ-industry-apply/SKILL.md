@@ -48,9 +48,13 @@ and `jd.md`.
 3. **Resume** (follow `resume_guide.md`). Write `_build/<id>/sections/objective.tex` (a title
    line naming the target role, then two lines at most, from
    `08-summaries.md`, worded toward this job) and `_build/<id>/sections/skills.tex` (only words in
-   `06-skills.md`, never the do-not-claim list; order and wording mirror the posting). Override
-   other sections (e.g. reorder bullets in `research.tex`) only when it clearly helps, using bullets
-   from `02-experience.md` / `03-projects.md`. Build:
+   `06-skills.md`, never the do-not-claim list; order and wording mirror the posting). Check the
+   method keywords on each research project (right side of its second line in `research.tex`): pull
+   the posting's terms that are close to what each project really does. Terms in `06-skills.md` go
+   straight in; propose any other term to the user (term, project, why it fits) and use it only after
+   they agree, adding it to `06-skills.md` with the date. Then override `research.tex` with the
+   chosen keywords. Override other sections (e.g. reorder bullets
+   in `research.tex`) only when it clearly helps, using bullets from `02-experience.md` / `03-projects.md`. Build:
    `python3 S/make_resume.py --employer "<Employer>" --role "<Role>"`. It must be exactly one
    page; if not, shorten the overrides and rebuild. Show the PDF.
 4. **Cover letter** (when the posting asks for one or the user wants one):
