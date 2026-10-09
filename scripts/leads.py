@@ -32,7 +32,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter as L
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from common import (close_in_excel, ensure_date_column, jm_path, load_config, norm_link, reopen_in_excel,
+from common import (close_in_excel, ensure_date_column, ensure_text_column, jm_path, load_config, norm_link, reopen_in_excel,
                     restore_dropdowns, tracker_path, trackers)
 
 COLS = [("Found", 11), ("Fit", 8), ("Employer", 26), ("Position", 30), ("Track", 12), ("Type", 15),
@@ -226,7 +226,15 @@ def add(cfg, path, items, kind="academic"):
     old = snapshot(ws, 5, end)
     r = end + 1          # new rows are written below, then everything is re-sorted newest first
     today = dt.date.today()
+    scan = scan_candidates(cfg) if kind == "industry" else {}
     for x in items:
+        c = scan.get(x.get("id")) or {}
+        if not x.get("url") and c.get("email_link"):   # alert postings without a public link (Indeed)
+            from industry_scan import alert_name
+            x["url"] = c["email_link"]
+            x["source"] = alert_name(c)
+            x["flags"] = ("; ".join(x["flags"]) if isinstance(x.get("flags"), list) else (x.get("flags") or "")) \
+                + ("; " if x.get("flags") else "") + "Link = the job link in the alert email"
         dl = None
         flags = x.get("flags") or ""
         if isinstance(flags, list):
@@ -286,6 +294,15 @@ def mark_seen(cfg, ids):
 PLATFORMS = [("econjobmarket", "EconJobMarket"), ("academicjobsonline", "AcademicJobsOnline"),
              ("interfolio", "Interfolio"), ("chronicle.com", "Chronicle Jobs"),
              ("insidehighered", "Inside Higher Ed Careers"), ("usajobs", "USAJOBS")]
+
+
+def scan_candidates(cfg):
+    """id -> candidate from the last industry scan (email link and alert name for alert postings)."""
+    p = os.path.join(os.path.dirname(tracker_path(cfg, "industry")), "industry_scan_new.json")
+    try:
+        return {x["id"]: x for x in json.load(open(p, encoding="utf-8"))["candidates"]}
+    except (OSError, ValueError, KeyError):
+        return {}
 
 
 def ad_texts(cfg, kind="academic"):
@@ -383,12 +400,16 @@ def promote(cfg, path, kind="academic"):
         deadline, due = g(8), (g(8) if received else None)
         if due and letters == "Yes" and "Letters Due" not in H:
             H["Letters Due"] = ensure_date_column(tr, "Letters Due")
+        if kind != "industry" and g(14) and "Carnegie" not in H:
+            H["Carnegie"] = ensure_text_column(tr, "Carnegie", width=11)
         row = {"Track": g(5), "Employer": g(3), "Position": g(4), "Type": type_map.get(g(6), "Other"),
                "Apply Via": apply_via(g(12), text, kind), "Link": g(12), "Deadline": deadline,
                "Letters Due": due if letters == "Yes" else None, "Status": "Not started",
                "Cover Letter": "To write", "Letters?": letters,
                "Notes": (f"From scan ({g(2)} fit): {g(9) or ''} | {g(10) or ''} | Apply Via and Letters? "
                          f"guessed from the ad; check.").strip()}
+        if kind != "industry":
+            row["Carnegie"] = g(14)
         if kind == "industry":
             row.update({"Track": None, "Category": g(5), "Type": g(6) or "Other", "Location": g(7),
                         "Source": SOURCES.get(g(11), "Company site"), "Resume": "To tailor", "Cover Letter": None,

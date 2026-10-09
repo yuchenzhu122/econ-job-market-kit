@@ -210,25 +210,35 @@ def indeed_blocks(body, msg):
     import hashlib
     out = []
 
-    def add(title, employer, location, context):
+    def add(title, employer, location, context, link):
         key = hashlib.sha1(f"{title}|{employer}".lower().encode()).hexdigest()[:10]
-        out.append({"id": f"IND-{key}", "url": "", "title": title, "employer": employer, "location": location,
-                    "posted": msg["date"], "text": "", "context": context[:400], "source": "IND",
-                    "alert": msg["subject"]})
+        out.append({"id": f"IND-{key}", "url": "", "email_link": link, "title": title, "employer": employer,
+                    "location": location, "posted": msg["date"], "text": "", "context": context[:400],
+                    "source": "IND", "alert": msg["subject"]})
 
     for block in re.split(r"\n\s*\n", body):
         ls = [re.sub(r"\s+", " ", l).strip() for l in block.splitlines() if l.strip()]
         if len(ls) >= 4 and ls[-1].startswith("http") and AGE.match(ls[-2]) and " - " in ls[1]:
             employer, location = ls[1].rsplit(" - ", 1)
-            add(ls[0], employer, location, " | ".join(ls[:-1]))
+            add(ls[0], employer, location, " | ".join(ls[:-1]), ls[-1])
     subj = msg.get("subject", "")
-    if not out and " @ " in subj and re.search(r"^View job:", body, re.M):
+    view = re.search(r"^View job:\s*(https?://\S+)", body, re.M)
+    if not out and " @ " in subj and view:
         title, employer = subj.rsplit(" @ ", 1)
         ls = [re.sub(r"\s+", " ", l).strip() for l in body.splitlines() if l.strip()]
         i = next((k for k, l in enumerate(ls) if l == title.strip()), None)
         location = ls[i + 2] if i is not None and i + 2 < len(ls) and ls[i + 1] == employer.strip() else ""
-        add(title.strip(), employer.strip(), location, " | ".join(ls[i:i + 6]) if i is not None else subj)
+        add(title.strip(), employer.strip(), location, " | ".join(ls[i:i + 6]) if i is not None else subj,
+            view.group(1))
     return out
+
+
+def alert_name(cand):
+    """Where a posting was found, for the Leads sheet: "Indeed alert: economist" or the email subject."""
+    s = cand.get("alert") or ""
+    m = re.search(r"job alert for (.+?) jobs? in ", s, re.I)
+    board = {"IND": "Indeed", "LI": "LinkedIn"}.get(cand.get("source"), cand.get("source") or "")
+    return f"{board} alert: {m.group(1)}" if m else f"{board} email: {s}" if s else board
 
 
 def alert_jobs(msg):
@@ -380,7 +390,8 @@ def main():
     for x in sorted(new, key=lambda x: bool(x.get("alert"))):
         k = key(x)
         if k in merged:
-            merged[k].setdefault("also_at", []).append(x["url"])
+            if x["url"]:
+                merged[k].setdefault("also_at", []).append(x["url"])
             stats["duplicate"] = stats.get("duplicate", 0) + 1
         else:
             merged[k] = x

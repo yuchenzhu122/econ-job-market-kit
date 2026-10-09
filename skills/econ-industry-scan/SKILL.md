@@ -48,6 +48,8 @@ Write `industry_eval.json` with the Write tool; no ad-hoc scripts.
    Indeed's plain-text alerts carry only opaque tracking links (no job key): those postings come
    with an empty `url` (id `IND-<hash of title and employer>`). Never open the tracking link; find
    the public posting on the employer's own careers site (WebSearch / WebFetch) or rate from the email.
+   Keep `url` empty in `industry_eval.json`: `leads.py add` fills Link with the email's job link
+   (for the user to click) and Source with the alert's name (e.g. "Indeed alert: economist").
    Alert postings have no text, only the email's lines (`EMAIL:` in `show`): use them to fix
    title / employer, and read the full posting for those you rate High or Medium:
    LinkedIn and Indeed with WebFetch (public job pages); NABE's site blocks scripts, so use the

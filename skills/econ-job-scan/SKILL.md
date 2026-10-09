@@ -123,7 +123,7 @@ by hand. Use WebFetch only for High/Medium ads whose text is too short to judge.
 ## B. Promote ("add my leads to the tracker")
 
 `python3 <repo>/scripts/leads.py promote` copies Leads rows with Decision = Add into the Tracker (status
-Not started, cover letter To write) and marks them Added. Then run the econ-tracker-fill
+Not started, cover letter To write, and the Carnegie label in a Carnegie column) and marks them Added. Then run the econ-tracker-fill
 skill on the new rows to fill Apply Via, Letters?, Still Need and Notes from the links.
 
 ## Rules
