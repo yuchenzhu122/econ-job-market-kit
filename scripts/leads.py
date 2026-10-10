@@ -327,6 +327,12 @@ IND_PLATFORMS = [("myworkdayjobs", "Workday"), ("greenhouse", "Greenhouse"), ("l
 SOURCES = {"LI": "LinkedIn", "IND": "Indeed", "NABE": "NABE", "JOE": "JOE"}
 
 
+def source_name(s):
+    """Tracker Source value for a Leads Source cell: a code (IND) or an alert name ("Indeed alert: economist")."""
+    s = str(s or "")
+    return SOURCES.get(s) or next((v for v in SOURCES.values() if s.startswith(v)), "Company site")
+
+
 def apply_via(url, text, kind="academic"):
     if kind == "industry":
         u = (url or "").lower()
@@ -407,12 +413,13 @@ def promote(cfg, path, kind="academic"):
                "Letters Due": due if letters == "Yes" else None, "Status": "Not started",
                "Cover Letter": "To write", "Letters?": letters,
                "Notes": (f"From scan ({g(2)} fit): {g(9) or ''} | {g(10) or ''} | Apply Via and Letters? "
-                         f"guessed from the ad; check.").strip()}
+                         f"guessed from the ad; check."
+                         + (f" | Found via {g(11)}" if kind == "industry" and str(g(11) or "") not in SOURCES else "")).strip()}
         if kind != "industry":
             row["Carnegie"] = g(14)
         if kind == "industry":
             row.update({"Track": None, "Category": g(5), "Type": g(6) or "Other", "Location": g(7),
-                        "Source": SOURCES.get(g(11), "Company site"), "Resume": "To tailor", "Cover Letter": None,
+                        "Source": source_name(g(11)), "Resume": "To tailor", "Cover Letter": None,
                         "Form Answers": "To write"})
         for h, v in row.items():
             if h in H and v not in (None, ""):
