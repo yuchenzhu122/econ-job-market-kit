@@ -437,6 +437,9 @@ def promote(cfg, path, kind="academic"):
         while tr.cell(row=nxt, column=H["Employer"]).value not in (None, ""):   # never write over a row
             nxt += 1
     synced = sync_added(lead, tr)
+    if moved:
+        from sort_tracker import sort_sheet
+        sort_sheet(wb)   # keep the Tracker in deadline / fit / status order
     restore_dropdowns(wb, cfg["letter_writers"])
     wb.save(path)
     print(f"promoted {len(moved)}: {moved}; synced {synced} deadline(s) back to Leads")

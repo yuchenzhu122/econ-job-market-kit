@@ -86,7 +86,8 @@ JOE's Full-Time Nonacademic consulting and tech postings come from the academic 
 
 `leads.py promote --industry` moves Decision = Add rows into the industry Tracker (Resume = To
 tailor, Form Answers = To write, Letters? = Yes only if the ad asks for recommendation letters),
-and refuses jobs that are already in the academic tracker. Then offer econ-industry-apply.
+and refuses jobs that are already in the academic tracker. It then re-sorts the Tracker by deadline,
+fit and status (`scripts/sort_tracker.py --industry` by hand). Then offer econ-industry-apply.
 
 ## Rules
 
