@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Sort the Tracker sheet by deadline, then fit, then status.
 
-    python3 sort_tracker.py [--industry] [--dry-run]
+    python3 sort_tracker.py [--industry] [--dry-run] [--prune-skip]
 
 Rows with no deadline go after dated ones (by fit and status); empty rows stay at the bottom; the
 industry tracker's EXAMPLE row stays first. Adds a Fit column (High / Medium / Low) when missing,
-filled from the "From scan (X fit)" note that leads.py promote writes. Formulas (Days Left,
+filled from the "From scan (X fit)" note that leads.py promote writes. --prune-skip (industry tracker): first delete rows whose Verdict is "skip" and mark their Leads
+row Decision = Pass, so they are not promoted again. Formulas (Days Left,
 _sort, _order) are rewritten from the row-5 template after the move. Also widens the header
 filter to every column so you can re-sort in Excel.
 """
@@ -28,6 +29,36 @@ def at(formula, r):
     return re.sub(r"(\$?)([A-Z]{1,3})(\$?)(\d+)",
                   lambda m: m.group(0) if (m.group(3) or m.group(4) != "5") else f"{m.group(1)}{m.group(2)}{r}",
                   formula)
+
+
+def prune_skip(wb):
+    """Delete Tracker rows with Verdict = skip; set the matching Leads row's Decision to Pass.
+    Returns the (employer, position) pairs removed."""
+    ws = wb["Tracker"]
+    H = tracker_headers(ws)
+    if "Verdict" not in H:
+        return []
+    gone = []
+    for r in range(5, ws.max_row + 1):
+        if str(ws.cell(row=r, column=H["Verdict"]).value or "").strip().lower() != "skip":
+            continue
+        if not ws.cell(row=r, column=H["Employer"]).value:
+            continue
+        gone.append((ws.cell(row=r, column=H["Employer"]).value, ws.cell(row=r, column=H["Position"]).value,
+                     ws.cell(row=r, column=H["Link"]).value))
+        for k in range(1, ws.max_column + 1):
+            c = ws.cell(row=r, column=k)
+            if not (isinstance(c.value, str) and c.value.startswith("=")):
+                c.value = None
+            c.hyperlink = None
+    if gone and "Leads" in wb.sheetnames:
+        li = wb["Leads"]
+        LH = {li.cell(row=4, column=c).value: c for c in range(1, li.max_column + 1)}
+        for r in range(5, li.max_row + 1):
+            e, p, l = (li.cell(row=r, column=LH[h]).value for h in ("Employer", "Position", "Link"))
+            if any(e == ge and (l == gl or p == gp) for ge, gp, gl in gone):
+                li.cell(row=r, column=LH["Decision"], value="Pass")
+    return [(e, p) for e, p, _ in gone]
 
 
 def sort_sheet(wb, dry_run=False):
@@ -105,11 +136,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--industry", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--prune-skip", action="store_true", help="delete Verdict = skip rows first")
     a = ap.parse_args()
     cfg = load_config()
     path = tracker_path(cfg, "industry" if a.industry else "academic")
     was = close_in_excel(path) if not a.dry_run else False
     wb = openpyxl.load_workbook(path)
+    if a.prune_skip and not a.dry_run:
+        for e, p in prune_skip(wb):
+            print(f"removed (skip): {e} | {p}")
     n = sort_sheet(wb, a.dry_run)
     if a.dry_run:
         return
