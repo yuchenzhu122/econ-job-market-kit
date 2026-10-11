@@ -41,6 +41,11 @@ JOE_LIST = "https://www.aeaweb.org/joe/listings"
 EJM_JSON = "https://backend.econjobmarket.org/data/zz_public/json/Ads"
 RSS_SITES = {"CHE": "https://jobs.chronicle.com/jobsrss/?PositionType=12",           # Economics category
              "IHE": "https://careers.insidehighered.com/jobsrss/?FacultyJobs=57"}  # Economics faculty
+# Education categories: read only when config scan.education_keywords is set, and only ads whose
+# title or teaser matches one of those keywords (schools of education hiring in education policy,
+# economics of education, quantitative methods ...); the categories are large and mostly unrelated
+EDU_RSS = {"CHE": "https://jobs.chronicle.com/jobsrss/?PositionType=24",
+           "IHE": "https://careers.insidehighered.com/jobsrss/?FacultyJobs=12"}
 IMF_JOBS = "https://imf.wd5.myworkdayjobs.com/wday/cxs/imf/IMF"        # Workday public job API
 WB_SITE = "https://worldbankgroup.csod.com/ux/ats/careersite/1/home?c=worldbankgroup"
 WB_SEARCH = "https://us.api.csod.com/rec-job-search/external/jobs"      # Cornerstone public search
@@ -180,14 +185,15 @@ def wb_postings():
     return out
 
 
-def rss_postings(src):
-    """Ads in the Economics category of a Madgex job board's RSS feed. Full text is fetched
-    later (rss_details) only for ads that pass the filter, to keep requests few."""
+def rss_postings(src, edu=False):
+    """Ads in the Economics (or, with edu, Education) category of a Madgex job board's RSS feed.
+    Full text is fetched later (rss_details) only for ads that pass the filter, to keep requests few."""
     import email.utils
     out, seen = [], set()
     cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=RSS_DAYS)
+    feed = (EDU_RSS if edu else RSS_SITES)[src]
     for page in range(1, RSS_PAGES + 1):
-        items = re.findall(r"<item>(.*?)</item>", fetch(f"{RSS_SITES[src]}&page={page}"), re.S)
+        items = re.findall(r"<item>(.*?)</item>", fetch(f"{feed}&page={page}"), re.S)
         if not items:
             break
         for it in items:
@@ -205,7 +211,8 @@ def rss_postings(src):
             emp, _, title = clean(g("title")).partition(": ")
             if not title:
                 emp, title = "", emp
-            out.append({"source": src, "id": f"{src}-{m.group(1)}", "url": link, "section": "Academic",
+            out.append({"source": src, "id": f"{src}-{m.group(1)}", "url": link, "edu": edu,
+                        "section": "Academic (Education category)" if edu else "Academic",
                         "title": title, "employer": emp, "department": "", "location": "", "deadline": "",
                         "fields": [], "field_names": [], "text": clean(g("description"))})
     return out
@@ -254,6 +261,10 @@ def keep(x, sc, today):
     if (x["source"] in RSS_SITES and OTHER_FIELD.search(x["title"])
             and not re.search(r"econ", x["title"], re.I)):
         return False, "field"
+    if x.get("edu"):      # Education category: keep only ads that name one of the user's keywords
+        head_text = (x["title"] + " " + x["text"]).lower()
+        if not any(k.lower() in head_text for k in sc.get("education_keywords", [])):
+            return False, "field"
     generic = x["source"] in RSS_SITES and re.search(r"faculty|professor", x["title"], re.I)
     if not (JUNIOR.search(head) or generic) and "Assistant Professor" not in x["section"] and "Lecturer" not in x["section"]:
         return False, "rank"
@@ -294,9 +305,13 @@ def main():
 
     today = dt.date.today().isoformat()
     posts, errors = [], []
-    for name, fn in (("JOE", joe_postings), ("EJM", ejm_postings),
-                     ("CHE", lambda: rss_postings("CHE")), ("IHE", lambda: rss_postings("IHE")),
-                     ("IMF", imf_postings), ("WB", wb_postings)):
+    sources = [("JOE", joe_postings), ("EJM", ejm_postings),
+               ("CHE", lambda: rss_postings("CHE")), ("IHE", lambda: rss_postings("IHE")),
+               ("IMF", imf_postings), ("WB", wb_postings)]
+    if sc.get("education_keywords"):
+        sources += [("CHE education", lambda: rss_postings("CHE", edu=True)),
+                    ("IHE education", lambda: rss_postings("IHE", edu=True))]
+    for name, fn in sources:
         try:
             posts += fn()
         except Exception as e:  # keep going if one source is down
