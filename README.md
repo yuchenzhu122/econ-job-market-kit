@@ -286,7 +286,7 @@ from recruiters at Analysis Group, Google and the Cleveland Fed. Details and dat
 ## Letter writers' list (academic and industry)
 
 `export_letter_list.py` builds the only thing you share (the trackers stay private): every
-position in either tracker with Letters? = Yes, soonest deadline first, with type of job, the
+position in either tracker with Letters? = Yes (Waiting = references contacted later or letters whose route the ad does not give: kept off the list until you change it to Yes), soonest deadline first, with type of job, the
 fields the ad asks for (Field),
 how to send the letter (Letters To: the tracker column of that name, filled from the ad, e.g.
 "Interfolio: the system emails you a request" or "Email to recruiting@firm.com"), link, deadline, your status, the date you applied, and when letters are due (Letters Due:
@@ -435,7 +435,7 @@ and Leads sheets runs it.
 
 ### 推荐人清单（学界 + 业界）
 
-- 只分享这份清单，追踪表始终是你自己的，不给任何人。两张追踪表里 Letters? = Yes 的岗位都会进来，按截止日期排序；Type 列能看出是学界还是业界（比如 Consulting、Tech）。
+- 只分享这份清单，追踪表始终是你自己的，不给任何人。两张追踪表里 Letters? = Yes 的岗位都会进来（Waiting 表示只要推荐人信息、之后才联系，或广告没说推荐信怎么交：先不上清单，等你改成 Yes），按截止日期排序；Type 列能看出是学界还是业界（比如 Consulting、Tech）。
 - **要手动改清单上的日期（截止日期、Letters Due、I Applied On），请在自己的 Tracker 里改** Deadline、Letters Due、Submitted 这几列，再点 ▶ Update Tracker。Tracker 里你手写的永远优先，Claude 只填空格子。直接在清单（包括 Google Sheet）里改这些列，下次刷新会被覆盖。
 - 列：岗位、工作类型（Type）、招的领域（Field）、推荐信怎么交（Letters To：取自追踪表同名列，按广告填，比如"Interfolio: the system emails you a request"或"Email to recruiting@firm.com"）、广告链接、截止日期、你的进展（Status）、你哪天提交的（I Applied On）、Letters Due（广告写明材料某天前要收到时才有，否则空着）；然后每位老师一列 Sent / Waiting，最后是你和每位老师的 Comments。
 - 默认：生成一个 Excel，放在共享网盘里，用"可编辑"权限分享一次链接。只有老师状态和 Comments 几列能改，其他列锁定；老师填的内容每次刷新都会读回来保留。邮件确认某位老师的信已收到时，那一栏自动变成 Received。有人 10 分钟内刚改过文件时，这次刷新会跳过；Dropbox 万一生成"冲突副本"，里面填的内容也会自动合并回来。

@@ -66,8 +66,13 @@ a confirmation email says that writer's letter arrived; never fill or change the
      `ensure_date_column(ws, "Letters Due")` from `<repo>/scripts/common.py`.
      Rows already filled get Letters Due only when the user asks ("fill Letters Due", "补 Letters Due", "补 Due"):
      then re-read the links of rows with Letters? = Yes and an empty Letters Due.
-   - Letters?: Yes if the ad asks for letters or references, else No.
-   - Letters To (only when Letters? = Yes): how the writers send their letter, from the ad, in
+   - Letters?: **Yes** if the ad asks for letters and says how they are sent (an application
+     system that emails the writers, or an email address); **Waiting** if it asks only for
+     references' names / contacts (contacted later, or only if shortlisted) or asks for letters
+     without saying how; **No** if it asks for neither. Only Yes rows go on the writers' list;
+     the user changes Waiting to Yes once letters are requested. Older trackers may lack
+     "Waiting" in the `Lists` sheet's Yes/No column: append it below "No".
+   - Letters To (when Letters? = Yes or Waiting): how the writers send their letter, from the ad, in
      English (the writers read it on their list). Academic systems email each writer a request
      once the user lists them: "Interfolio: the system emails you a request" (same for
      EconJobMarket, JOE, AcademicJobsOnline, or an employer's own portal when the ad says

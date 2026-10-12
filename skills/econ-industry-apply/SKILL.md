@@ -37,8 +37,9 @@ and `jd.md`.
    it needs a login) and save it as `_build/<id>/jd.md` (id is printed by make_resume.py:
    `<employer>-<role>` lowercased, hyphens). Fill empty cells only: Category, Level, Type,
    Location, Source, Apply Via, Req ID, Deadline (only if stated), Visa (Sponsors / No
-   sponsorship / Not stated, from the ad's own words), Letters? (Yes only if it asks for
-   recommendation letters), Letters To (when Letters? = Yes: how writers send them, from the ad,
+   sponsorship / Not stated, from the ad's own words), Letters? (Yes if it asks for
+   recommendation letters and says how; Waiting if references are contacted later or the ad does
+   not say how; else No), Letters To (when Letters? = Yes or Waiting: how writers send them, from the ad,
    in English, e.g. "Email to LORSubmission@crai.com" or "Greenhouse: the system emails you a
    request"; add the column with `ensure_text_column(ws, "Letters To")` if the tracker lacks it),
    Still Need (materials beyond resume and cover letter). Give a
