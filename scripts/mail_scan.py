@@ -10,7 +10,8 @@ e.g. Inbox plus Clutter and Junk Email, where automatic confirmations sometimes 
 "more_accounts" ([{"account": ..., "mailboxes": [...]}], e.g. a separate address used for industry
 applications)
 through the Mail app that is already signed in on this Mac (no passwords). Only messages whose
-sender or subject looks like an application system or a letter notification are opened; the rest
+sender or subject looks like an application system, a letter notification, an offer, an interview
+or a request for letters are opened; the rest
 are skipped, and senders matching "skip_senders" (e.g. your own university's domain, so personal
 mail with colleagues and students is never opened) are skipped too. Each message is handled once (ids kept in mail_state.json).
 
@@ -40,8 +41,11 @@ LOOKS = re.compile(
     r"recommend|reference|referee|letter|dossier|interfolio|econjobmarket|academicjobsonline|"
     r"workday|myworkday|peopleadmin|smartrecruiters|aprecruit|apptrkr|taleo|successfactors|"
     r"icims|csod|cornerstone|recruit|talent|careers?@|jobs?@|greenhouse|lever\.co|ashbyhq|jobvite|"
-    r"no-?reply@.*(?:hire|jobs)", re.I)
+    r"no-?reply@.*(?:hire|jobs)|"
+    # offers, interviews and requests for letters: the report flags these for the user
+    r"offer|pleased to|congratulat|interview|fly-?out|campus visit|short-?list|next (?:step|round)", re.I)
 NOISE = re.compile(r"newsletter|webinar|textbook|parking|seminar|bargaining|sale|discount|job alert|"
+                   r"special offer|limited[- ]time|% off|free trial|"
                    r"jobs? (?:for you|you may be interested)|new jobs? match", re.I)
 
 
@@ -136,7 +140,7 @@ def tracker_rows(path, kind="academic"):
         get = lambda h: vals[H[h]] if h in H else None
         sub = get("Submitted")
         rows.append({"tracker": kind, "row": r, "employer": emp, "position": get("Position"), "apply_via": get("Apply Via"),
-                     "link": get("Link"), "status": get("Status"),
+                     "link": get("Link"), "status": get("Status"), "letters": get("Letters?"),
                      "submitted": sub.date().isoformat() if isinstance(sub, dt.datetime) else (sub or "")})
     return rows
 
@@ -177,7 +181,7 @@ def show(cfg):
     d = json.load(open(new_path))
     print("TRACKER ROWS")
     for t in d["tracker"]:
-        print(f"  {t.get('tracker', 'academic')} row {t['row']}: {t['employer']} | {t['position']} | via {t['apply_via']} | status {t['status']}"
+        print(f"  {t.get('tracker', 'academic')} row {t['row']}: {t['employer']} | {t['position']} | via {t['apply_via']} | status {t['status']} | letters {t.get('letters') or '-'}"
               f"{' | submitted ' + t['submitted'] if t['submitted'] else ''}")
     print(f"\nEMAILS ({len(d['messages'])})")
     for i, mm in enumerate(d["messages"]):

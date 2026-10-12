@@ -1,6 +1,6 @@
 ---
 name: econ-mail-check
-description: Check the user's Apple Mail for job application confirmations and recommendation-letter notifications, and record them in the job market tracker (Submitted date, Status, Received under each letter writer), then refresh the letter writers' shared list. Use when the user says "check my email for applications", "扫一下邮件", "更新提交状态", or when the daily mail-check scheduled task fires.
+description: Check the user's Apple Mail for job application confirmations and recommendation-letter notifications (and flag offers, interview invitations and requests for letters), and record them in the job market tracker (Submitted date, Status, Received under each letter writer), then refresh the letter writers' shared list. Use when the user says "check my email for applications", "扫一下邮件", "更新提交状态", or when the daily mail-check scheduled task fires.
 ---
 
 # Daily mail check
@@ -48,15 +48,27 @@ ad-hoc scripts.
      config.json: `{"row": N, "writer": "<Name>", "letter": "Received"}`. This marks Received in
      that writer's tracker column (the shared list is only filled by the writers). A reminder
      that a letter is still missing: no update, list it in the report.
-   - **Anything else** (requests to complete an application, rejections, interview invitations,
-     newsletters, job alerts): no update. Mention rejections and interview invitations in the
-     report so the user can update Status themselves.
+   - **Needs the user's attention** (no tracker update; flag it at the top of the report):
+     - **An offer** (an offer letter, "we are pleased to offer you", a verbal offer to confirm).
+     - **A request for letters**: an employer or system asking for recommendation letters or
+       asking the user's referees to submit them now (e.g. "please have your references submit
+       letters", "your references have been contacted", a system request sent to a writer).
+       `show` prints each row's Letters? value: when the row is Waiting or No, say "建议把
+       Letters? 改成 Yes" (the user changes it; Yes rows go on the writers' list). Add how the
+       letters must be sent, if the email says, for the Letters To column.
+     - **An interview invitation**, campus visit / flyout, or a request for more materials, with
+       any date or reply deadline in the email.
+   - **Anything else** (requests to complete an application, rejections, newsletters, job
+     alerts): no update. Mention rejections in the report so the user can update Status.
 3. If an email clearly confirms an application but no tracker row matches, do not add a row:
    list it in the report.
 4. `apply` the updates (or `[]`).
-5. Report in Chinese, briefly: applications marked submitted, letters marked Received, missing-letter
-   reminders, and emails that need the user's attention (unmatched
-   confirmations, interview invitations, rejections). If nothing changed, say so in one line.
+5. Report in Chinese, briefly. Start with a "⚠️ 需要你处理" section when there is an offer, a
+   request for letters or an interview invitation: employer, position, tracker row, what is asked
+   and any deadline. Then: applications marked submitted, letters marked Received, missing-letter
+   reminders, unmatched confirmations and rejections. If nothing changed, say so in one line.
+   When the check runs unattended (a scheduled task) and that section is not empty, also send a
+   one-line PushNotification if the tool is available (e.g. "Offer from X; Y asks for letters").
 
 ## Rules
 

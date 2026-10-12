@@ -40,7 +40,7 @@ and `jd.md`.
    sponsorship / Not stated, from the ad's own words), Letters? (Yes if it asks for
    recommendation letters and says how; Waiting if references are contacted later or the ad does
    not say how; else No), Letters To (when Letters? = Yes or Waiting: how writers send them, from the ad,
-   in English, e.g. "Email to LORSubmission@crai.com" or "Greenhouse: the system emails you a
+   in English, e.g. "Email to letters@firm.com" or "Greenhouse: the system emails you a
    request"; add the column with `ensure_text_column(ws, "Letters To")` if the tracker lacks it),
    Still Need (materials beyond resume and cover letter). Give a
    Verdict: pursue / gap (a real barrier: required experience or skill the user lacks, a
