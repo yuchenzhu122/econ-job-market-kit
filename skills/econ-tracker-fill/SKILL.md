@@ -1,6 +1,6 @@
 ---
 name: econ-tracker-fill
-description: Fill in an economics job market application tracker from posting links. Use when the user says "fill the tracker", "补全追踪表", "read the links in my tracker", or has pasted job links into the tracker's Link column and wants the rest of each row completed. Also use for "update the letter list", "更新老师那页", "refresh the letter writers' file", and for setting up the letter writers' Google Sheet ("set up the Google Sheet", "设置Google Sheet"). Reads each posting and fills Employer, Position, Type, Field, Track, Apply Via, Deadline, Letters Due, Letters?, Still Need, Notes. Does not write cover letters (that is econ-cover-letter).
+description: Fill in an economics job market application tracker from posting links. Use when the user says "fill the tracker", "补全追踪表", "read the links in my tracker", or has pasted job links into the tracker's Link column and wants the rest of each row completed. Also use for "update the letter list", "更新老师那页", "refresh the letter writers' file", and for setting up the letter writers' Google Sheet ("set up the Google Sheet", "设置Google Sheet"). Reads each posting and fills Employer, Position, Type, Field, Track, Apply Via, Deadline, Letters Due, Letters?, Letters To, Still Need, Notes. Does not write cover letters (that is econ-cover-letter).
 ---
 
 # Fill tracker rows from posting links
@@ -66,7 +66,21 @@ a confirmation email says that writer's letter arrived; never fill or change the
      `ensure_date_column(ws, "Letters Due")` from `<repo>/scripts/common.py`.
      Rows already filled get Letters Due only when the user asks ("fill Letters Due", "补 Letters Due", "补 Due"):
      then re-read the links of rows with Letters? = Yes and an empty Letters Due.
-   - Letters?: Yes if the ad asks for letters or references, else No.
+   - Letters?: **Yes** if the ad asks for letters and says how they are sent (an application
+     system that emails the writers, or an email address); **Waiting** if it asks only for
+     references' names / contacts (contacted later, or only if shortlisted) or asks for letters
+     without saying how; **No** if it asks for neither. Only Yes rows go on the writers' list;
+     the user changes Waiting to Yes once letters are requested. Older trackers may lack
+     "Waiting" in the `Lists` sheet's Yes/No column: append it below "No".
+   - Letters To (when Letters? = Yes or Waiting): how the writers send their letter, from the ad, in
+     English (the writers read it on their list). Academic systems email each writer a request
+     once the user lists them: "Interfolio: the system emails you a request" (same for
+     EconJobMarket, JOE, AcademicJobsOnline, or an employer's own portal when the ad says
+     referees are contacted). An address in the ad: "Email to letters@school.edu". References
+     contacted later only: "References only; contacted later". Older trackers may lack the column:
+     add it with `ensure_text_column(ws, "Letters To")` from `<repo>/scripts/common.py`. Empty
+     cells on the writers' list fall back to the system request for the academic systems above,
+     else "Not known yet".
    - Still Need: required materials NOT in `standard_packet` (e.g. diversity statement,
      a writing sample other than the JMP, transcripts, sample syllabus, teaching video).
    - Eligibility: if the ad excludes the user (e.g. requires years since PhD, a citizenship
@@ -86,7 +100,7 @@ a confirmation email says that writer's letter arrived; never fill or change the
    `letter_share_file` from config.json (the file the letter writers have a link to), and the Google
    Sheet in `letter_share_gsheet` if one is set. Pass on any "Google Sheet not updated" warning.
 6. **Report** (in the user's language): a short table of filled rows (Employer, Position,
-   Field, Deadline, Letters Due, Apply Via, Letters?, Still Need), rows you could not read and why, and what to
+   Field, Deadline, Letters Due, Apply Via, Letters?, Letters To, Still Need), rows you could not read and why, and what to
    double-check (inferred deadlines, ambiguous Type). Offer to draft cover letters.
 
 ## The shared letter list
@@ -97,8 +111,8 @@ The tracker is private and never shared. The letter writers see only this list.
 Rejected / Withdrawn, soonest deadline first) to `letter_share_file` (a read-only Excel backup)
 and, if `letter_share_gsheet` is set, to that Google Sheet, which the writers edit. Columns:
 
-- From the tracker, rewritten on every refresh: #, Deadline, Employer, Position, Type, Submit
-  Letter Via, Link, Status, I Applied On, Letters Due (from the tracker; blank until known). To change these, change the tracker, not the sheet.
+- From the tracker, rewritten on every refresh: #, Employer, Position, Type, Field, Letters To,
+  Link, Deadline, Status, I Applied On, Letters Due (from the tracker; blank until known). To change these, change the tracker, not the sheet.
 - Filled by hand, read back and kept on every refresh (matched by Link, else Employer +
   Position): one status column per writer (Sent / Waiting, filled by the writers), then
   "<user's first name> Comments" and "<writer> Comments" for each writer. Never write into these

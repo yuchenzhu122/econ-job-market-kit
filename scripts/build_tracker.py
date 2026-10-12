@@ -62,7 +62,7 @@ if IND:
                      "LinkedIn Easy Apply", "Indeed", "Handshake", "Email", "Other"],
         "Status": ["Not started", "In progress", "Submitted", "OA / Case", "Interview", "Final round", "Offer",
                    "Rejected", "Withdrawn"],
-        "Yes/No": ["Yes", "No"],
+        "Yes/No": ["Yes", "No", "Waiting"],
         "Letter": ["Received"],
         "Cover Letter": ["To write", "Drafted", "Final", "Not needed"],
         "Source": ["LinkedIn", "Indeed", "NABE", "Company site", "JOE", "Referral", "Recruiter", "Handshake", "Other"],
@@ -81,7 +81,7 @@ else:
                  "HigherEdJobs", "Chronicle Jobs", "Inside Higher Ed Careers", "Employer website", "Email", "LinkedIn / Handshake", "USAJOBS", "Other"],
     "Status": ["Not started", "In progress", "Submitted", "Interview", "Flyout", "Offer",
                "Rejected", "Withdrawn"],
-    "Yes/No": ["Yes", "No"],
+    "Yes/No": ["Yes", "No", "Waiting"],
     "Letter": ["Received"],
     "Cover Letter": ["To write", "Drafted", "Final", "Not needed"],
   }
@@ -98,6 +98,8 @@ RANGE = {n: f"Lists!${L(c)}$4:${L(c)}$30" for c, n in enumerate(lists, start=1)}
 tr = wb.create_sheet("Tracker", 0)
 WRITER_COLS = [(w, 12, "letter", "Received once this writer's letter has arrived. Set it yourself, or let the optional mail check fill it.")
                for w in WRITERS]
+LETTERS_TO_NOTE = ("How writers send their letter, from the ad (also on the writers' list): e.g. "
+                   "'Interfolio: the system emails you a request' or 'Email to recruiting@firm.com'.")
 if IND:
   cols = [  # header, width, kind, note
     ("Category", 15, "in", "Which direction: " + " / ".join(lists["Category"])),
@@ -121,7 +123,8 @@ if IND:
     ("Cover Letter", 11, "in", "To write / Drafted / Final / Not needed"),
     ("Form Answers", 11, "in", "Short answers for the application form (form_answers.md in the job's folder)"),
     ("Still Need", 22, "in", "What's missing, e.g. 'writing sample, transcript'"),
-    ("Letters?", 9, "in", "Yes = this job needs recommendation letters (it will show up on the letter writers' list)."),
+    ("Letters?", 9, "in", "Yes = letters needed and the ad says how (a system request or an email): shown on the letter writers' list. Waiting = references only, contacted later, or letters without saying how: not on the list until you change it to Yes. No = no letters."),
+    ("Letters To", 24, "in", LETTERS_TO_NOTE),
   ] + WRITER_COLS + [
     ("Referral / Contact", 20, "in", "Who you know there, referral status"),
     ("Notes", 34, "in", "Anything else: interview rounds, recruiter, what to stress."),
@@ -143,7 +146,8 @@ else:
     ("Submitted", 12, "date", "Date you submitted. Type it yourself, or let the optional mail check fill it from confirmation emails."),
     ("Still Need", 26, "in", "Type what's missing, e.g. 'cover letter, teaching evals'. Leave blank when everything is ready."),
     ("Cover Letter", 11, "in", "To write / Drafted / Final / Not needed. Ask Claude: 'write the cover letter for <Employer>' and it updates this cell. Files are in 09_Cover_Letters."),
-    ("Letters?", 9, "in", "Yes = this job needs recommendation letters (it will show up on the letter writers' list)."),
+    ("Letters?", 9, "in", "Yes = letters needed and the ad says how (a system request or an email): shown on the letter writers' list. Waiting = references only, contacted later, or letters without saying how: not on the list until you change it to Yes. No = no letters."),
+    ("Letters To", 24, "in", LETTERS_TO_NOTE),
   ] + WRITER_COLS + [
     ("Notes", 34, "in", "Anything else: interview dates, contacts, what to stress in the cover letter."),
     ("_sort", 6, "auto", None), ("_order", 6, "auto", None),
@@ -205,7 +209,7 @@ examples = [
     {"Track": "Academic", "Employer": "EXAMPLE – State University", "Position": "Assistant Professor (Labor/Education)",
      "Type": "Tenure-track", "Apply Via": "EconJobMarket", "Link": "https://www.aeaweb.org/joe/",
      "Deadline": dt.date(2026, 11, 15), "Status": "In progress", "Still Need": "teaching evals", "Cover Letter": "Drafted",
-     "Letters?": "Yes", WRITERS[0]: "Received",
+     "Letters?": "Yes", "Letters To": "EconJobMarket: the system emails you a request", WRITERS[0]: "Received",
      "Notes": "Mention their education policy center in the cover letter."},
     {"Track": "Industry", "Employer": "EXAMPLE – Tech Company", "Position": "Economist",
      "Type": "Tech", "Apply Via": "Employer website", "Link": "https://example.com/careers",
