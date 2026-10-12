@@ -257,6 +257,19 @@ def ensure_submitted_column(ws):
     return ensure_date_column(ws, "Submitted")
 
 
+# academic application systems that email each letter writer a request link once you list them
+LETTER_SYSTEMS = ("interfolio", "joe", "econjobmarket", "academicjobsonline")
+
+
+def default_letters_to(apply_via):
+    """'Letters To' text for a row that has none yet: the system's request email for the academic
+    systems above, else '' (read the ad)."""
+    via = str(apply_via or "").strip()
+    if any(k in via.lower() for k in LETTER_SYSTEMS):
+        return f"{via}: the system emails you a request"
+    return ""
+
+
 def ensure_text_column(ws, name, width=22):
     """Add a plain text column (e.g. 'Field') at the right edge of an older Tracker sheet if it is
     missing. Returns its index."""

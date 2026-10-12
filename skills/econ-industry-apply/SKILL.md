@@ -38,7 +38,10 @@ and `jd.md`.
    `<employer>-<role>` lowercased, hyphens). Fill empty cells only: Category, Level, Type,
    Location, Source, Apply Via, Req ID, Deadline (only if stated), Visa (Sponsors / No
    sponsorship / Not stated, from the ad's own words), Letters? (Yes only if it asks for
-   recommendation letters), Still Need (materials beyond resume and cover letter). Give a
+   recommendation letters), Letters To (when Letters? = Yes: how writers send them, from the ad,
+   in English, e.g. "Email to LORSubmission@crai.com" or "Greenhouse: the system emails you a
+   request"; add the column with `ensure_text_column(ws, "Letters To")` if the tracker lacks it),
+   Still Need (materials beyond resume and cover letter). Give a
    Verdict: pursue / gap (a real barrier: required experience or skill the user lacks, a
    sponsorship or clearance problem) / skip. Read `13-advice.md`, `14-employers.md`,
    `15-market-wisdom.md` (including its NABE notes) for anything about this employer or role type,
