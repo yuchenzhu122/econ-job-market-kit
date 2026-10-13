@@ -83,13 +83,13 @@ there first), otherwise in `config.json`
      --position "<exact title>" --variant <research|teaching> --fit "<paragraph>" \
      --enclosures "<what is actually attached, e.g. CV, job market paper, and teaching evaluations>"
    ```
-   Options (see "Flexible options" in `templates.md`): `--short jmp,other_research,teaching`
-   uses the short shared paragraphs to make room for a longer fit paragraph; `--fit-first`
-   puts the fit paragraph right after the opening.
+   Options: `--short jmp,other_research,teaching` uses the `<key>_short` versions of shared
+   paragraphs (when the knowledge base has them) to make room for a longer fit paragraph;
+   `--fit-first` puts the fit paragraph right after the opening.
    Pass `--enclosures` whenever the posting's material list differs from the default
    closing (CV, job market paper, research statement, teaching statement); the letter must
    never claim an enclosure that is not being submitted.
-   Check the yellow placeholder is gone and the length: `research` exactly one page in the US (two pages are fine where the ad asks the letter to address selection criteria, e.g. UK / Australia),
+   Check the yellow placeholder is gone and the length: `research` exactly one page,
    `teaching` at most two. If it runs long, shorten the fit paragraph; never cut shared
    paragraphs without asking.
 6. **Update the tracker** (if the file is open in Excel and saving fails, ask the user to
