@@ -35,6 +35,27 @@ research is condensed and tied to students. Up to two pages is normal.
 | 5 | fit | The longest tailored part (3 to 6 sentences): named courses from *their* catalog or ad that you can teach, their student population or mission as the school describes it, teaching load or format named in the ad (e.g. online, large intro sections), and why this kind of institution. |
 | 6 | `closing_teaching` | Enclosures (teaching statement, evaluations), letter writers, thanks. |
 
+## Flexible options (both templates)
+
+- **Short shared paragraphs.** Keep a two- or three-sentence `<key>_short` version of `jmp`,
+  `other_research` and `teaching` in the knowledge base. For a close match, or an ad that asks
+  the letter to address its criteria, build with `--short jmp,other_research,teaching` and give
+  the room to the fit paragraph.
+- **Length by region.** US research letters stay at one page. UK and Australian applications
+  usually address the selection criteria point by point ("About you", "Essential criteria");
+  there the fit paragraph may answer each criterion with evidence, and two pages are normal.
+- **Lead with the match.** When the ad names the candidate's field ("particular interest in
+  macroeconomics"), build with `--fit-first` so the match comes right after the opening.
+- **One thread.** A single sentence that links the candidate's research and teaching (their own
+  way of framing economics, from the teaching statement) makes the letter memorable; keep it in
+  the shared teaching paragraph so every letter carries it.
+- **Practice, not counts.** The CV already lists courses and TA assignments; the letter says what
+  the candidate does in class and what they changed in response to students.
+- **Teaching-focused, by kind of school.** Liberal arts colleges: how undergraduates take part in
+  the candidate's research. Teaching tracks at large universities: how the candidate runs or
+  would run large introductory sections. Write a plan ("I would...") when there is no direct
+  experience; never present it as experience.
+
 ## Rules for the fit paragraph (both templates)
 
 - Facts about the school come only from the ad and the school's own pages; facts about the
