@@ -251,7 +251,7 @@ the Mail app on this Mac is signed in to, and put that account's name in
 Say "apply to <company>" (给XX做材料). Following dayuan-wang/job-hunt-helper's per-job workflow,
 everything is written for that posting only and goes into `Industry 2026-27/<Company> - <Role>/`:
 
-1. **Analyze.** Claude reads the posting (saved as `jd.md`), the company's or team's own pages,
+1. **Analyze.** Claude reads the posting (saved as plain text in the job's folder, `Job_Description.txt`, so you still have it after the ad closes), the company's or team's own pages,
    and your notes on that employer (`14-employers.md`, `13-advice.md`), fills the row (category,
    level, visa, letters, pursue / gap / skip) and tells you the two or three things the posting
    cares most about.
@@ -425,7 +425,7 @@ and Leads sheets runs it.
 
 参考 dayuan-wang/job-hunt-helper 的做法，每份材料只为这一个岗位写，放进 `Industry 2026-27/<公司> - <岗位>/`：
 
-- **分析**：读职位原文（存为 `jd.md`）、公司或团队自己的页面、知识库里关于这家的情报和建议，补全该行（方向、级别、签证、推荐信、pursue/gap/skip），告诉你这个岗位最看重的两三点。
+- **分析**：读职位原文（以纯文本 `Job_Description.txt` 存进该岗位的文件夹，广告下架后也能查）、公司或团队自己的页面、知识库里关于这家的情报和建议，补全该行（方向、级别、签证、推荐信、pursue/gap/skip），告诉你这个岗位最看重的两三点。
 - **简历**（一页，从 LaTeX 母版生成）：只改需要变的部分，包括一行写明目标岗位的职业标题、两行 objective、技能栏（用职位描述里的词，但只能用你技能库里有的，不写"不写清单"上的），必要时调整 bullet 顺序。按 NABE 求职建议：招聘者初筛只看约 6 秒，简历上方三分之一要一眼看清你是谁、要什么岗位、怎么联系；技能用词要和职位描述一致，因为申请系统先按这些词筛。
 - **Cover letter**（350–450 词，一页）：你的开头 → 一个和岗位核心问题最匹配的旗舰项目 → 另一段相关经历 → 为什么是这家公司（来自它自己的页面）→ 你的结尾。不写空泛的客套话。
 - **表单问答**（`form_answers.md`）：职位自己的问题或常见问题（为什么选我们、一个数据项目、工作授权用固定原话、薪资怎么答），每条 100 词以内。

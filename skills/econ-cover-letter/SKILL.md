@@ -42,6 +42,10 @@ there first), otherwise in `config.json`
    - anything the ad asks the letter itself to do ("highlight how you meet ...", "describe
      your interest in ...", "address ...");
    - the exact list of required materials (the letter's enclosure sentence must match it).
+   Save the posting as `<job_market_dir>/<cover_letter_dir>/job_descriptions/JD_<Employer>[_<tag>].txt`
+   (named like the letter): plain text, the full text of every version read, each with its link
+   and the date saved, without page menus, buttons or Markdown. Postings disappear after they
+   close, and interviews come months later.
 2a. **Map requirements to evidence.** Make a table: requirement (in the ad's words) → the
    user's matching evidence, with its source (knowledge-base file or config.json key, CV line, statement
    paragraph) → or "no evidence". Rank by how much the ad stresses each point (named in the

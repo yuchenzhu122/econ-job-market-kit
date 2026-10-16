@@ -24,9 +24,9 @@ user come ONLY from the knowledge base and the masters in the materials index; f
 employer only from the posting and the employer's own pages. Writing guide: `resume_guide.md`
 next to this file.
 
-Per job: `<industry.dir>/<Employer> - <Role>/` holds only uploadable files (resume PDF, cover
-letter PDF, form_answers.md); `<industry.dir>/_build/<id>/` holds the tailored section files
-and `jd.md`.
+Per job: `<industry.dir>/<Employer> - <Role>/` holds the uploadable files (resume PDF, cover
+letter PDF, form_answers.md) and `Job_Description.txt`, the saved posting;
+`<industry.dir>/_build/<id>/` holds the tailored section files.
 
 ## Steps
 
@@ -34,8 +34,10 @@ and `jd.md`.
    is not there, check the academic tracker too (`leads.find_existing`); if it is in neither,
    add a row (Employer, Position, Link, Status Not started) with openpyxl (never `data_only=True`).
 2. **Analyze** (one company, one role: everything below is written for this posting only). Read the posting (WebFetch; NABE pages in the built-in browser; Claude in Chrome or ask the user to paste it if
-   it needs a login) and save it as `_build/<id>/jd.md` (id is printed by make_resume.py:
-   `<employer>-<role>` lowercased, hyphens). Fill empty cells only: Category, Level, Type,
+   it needs a login) and save it as `<Employer> - <Role>/Job_Description.txt`: plain text, the
+   full posting (not a summary), its link and the date saved, without page menus, buttons or
+   Markdown. Postings disappear after they close, and interviews come months later.
+   Fill empty cells only: Category, Level, Type,
    Location, Source, Apply Via, Req ID, Deadline (only if stated), Visa (Sponsors / No
    sponsorship / Not stated, from the ad's own words), Letters? (Yes if it asks for
    recommendation letters and says how; Waiting if references are contacted later or the ad does
@@ -80,7 +82,8 @@ and `jd.md`.
    Then fill and upload. Never type passwords, ID / passport / SSN numbers or EEO answers (leave
    them for the user), never accept terms, never click Submit / Apply / Send: stop and tell the
    user it is ready for them to review and submit.
-7. **Update** the row: Resume = Drafted, Cover Letter, Form Answers; Notes += "Materials
+7. **Update** the row (when the user says it is submitted, first check that
+   `Job_Description.txt` is in the job's folder): Resume = Drafted, Cover Letter, Form Answers; Notes += "Materials
    <date>". After the user says it is submitted: Status = Submitted, Submitted = date. If
    Letters? = Yes, run `python3 S/export_letter_list.py` so the writers see it.
 8. **Report** in the user's language: verdict, what was tailored (objective and skills lines
