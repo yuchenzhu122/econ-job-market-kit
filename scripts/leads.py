@@ -412,8 +412,8 @@ def promote(cfg, path, kind="academic"):
                "Apply Via": apply_via(g(12), text, kind), "Link": g(12), "Deadline": deadline,
                "Letters Due": due if letters == "Yes" else None, "Status": "Not started",
                "Cover Letter": "To write", "Letters?": letters,
-               "Notes": (f"From scan ({g(2)} fit): {g(9) or ''} | {g(10) or ''} | Apply Via and Letters? "
-                         f"guessed from the ad; check."
+               "Notes": (f"From scan ({g(2)} fit): {g(9) or ''} | {g(10) or ''} | "
+                         + ("Apply Via and Letters?" if "Apply Via" in H else "Letters?") + " guessed from the ad; check."
                          + (f" | Found via {g(11)}" if kind == "industry" and str(g(11) or "") not in SOURCES else "")).strip()}
         if kind != "industry":
             row["Carnegie"] = g(14)

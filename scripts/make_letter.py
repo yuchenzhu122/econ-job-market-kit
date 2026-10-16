@@ -15,6 +15,10 @@ section per paragraph, plain text: & and quotes are escaped for you), and otherw
 config.json ("cover_letter", written in LaTeX). Only --fit (and --body for industry) is new per
 letter; --enclosures rewrites the closing's "I have enclosed ..." sentence to match what the
 posting asks for.
+--short jmp,other_research,teaching   use the "<key>_short" version of those shared paragraphs, to make
+                     room for a longer fit paragraph (close matches, ads that ask the letter to
+                     address selection criteria)
+--fit-first          put the fit paragraph right after the opening paragraph (strong matches)
 Without --fit, a highlighted placeholder is inserted. Output: <job_market_dir>/<cover_letter_dir>/CL_<Employer>.pdf
 """
 import argparse
@@ -45,6 +49,10 @@ def main():
     ap.add_argument("--enclosures", default="",
                     help='what is actually attached, e.g. "CV, job market paper, and teaching evaluations"; '
                          'replaces the "I have enclosed ..." sentence of the closing')
+    ap.add_argument("--short", default="",
+                    help='comma-separated shared paragraphs to replace by their "<key>_short" version, '
+                         'e.g. "jmp,other_research,teaching"')
+    ap.add_argument("--fit-first", action="store_true", help="put the fit paragraph right after the opening")
     a = ap.parse_args()
     cfg = load_config()
 
@@ -56,14 +64,22 @@ def main():
     # plain text: escape it for LaTeX, but keep placeholders such as {letter_writers} intact
     paras.update({k: re.sub(r"\{([a-z\\_]+)\}", lambda m: "{" + m.group(1).replace("\\_", "_") + "}", tex_escape(v))
                   for k, v in kb_sections(cfg, "10-cover-letter-kb.md").items()})
-    missing = [k for k in ORDER[a.variant] if k not in ("fit", "body") and k not in paras]
+    order = list(ORDER[a.variant])
+    if a.fit_first and "fit" in order:
+        order.remove("fit")
+        order.insert(1, "fit")
+    for k in filter(None, (s.strip() for s in a.short.split(","))):
+        if k not in order:
+            raise SystemExit(f"--short {k}: not a paragraph of --variant {a.variant} ({order})")
+        order[order.index(k)] = k + "_short"
+    missing = [k for k in order if k not in ("fit", "body") and k not in paras]
     if missing:
         raise SystemExit(f"10-cover-letter-kb.md (or config.json cover_letter) is missing {missing} "
                          f"(needed for --variant {a.variant})")
     if a.variant == "industry" and not a.body.strip():
         raise SystemExit("--variant industry needs --body (the job-specific middle paragraph).")
     middle = "\n\n".join(tex_escape(p.strip()) for p in a.body.split("\n\n") if p.strip())
-    body = [fit if k == "fit" else middle if k == "body" else paras[k].format(**fill) for k in ORDER[a.variant]]
+    body = [fit if k == "fit" else middle if k == "body" else paras[k].format(**fill) for k in order]
     if a.enclosures.strip():
         body[-1], n = re.subn(r"^I have enclosed [^.]*\.", lambda m: "I have enclosed my " + tex_escape(a.enclosures.strip()) + ".", body[-1])
         if not n:

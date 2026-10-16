@@ -11,9 +11,13 @@ Sources (all public, machine-readable):
   IMF: the IMF's Workday career site (public JSON API)
   WB: the World Bank Group's Cornerstone career site (public search API; economics/research titles)
   CHE / IHE: Chronicle of Higher Education Jobs and Inside Higher Ed Careers (RSS search
-  feeds, newest first; strong on teaching-focused and regional colleges). HigherEdJobs
-  blocks automated access, so it is not scanned; most of its economics faculty ads are
-  cross-posted to one of these.
+  feeds, newest first; strong on teaching-focused and regional colleges).
+  APSIA: the job board of the Association of Professional Schools of International Affairs
+  (RSS; policy schools' faculty searches, often not on JOE). Only faculty ads that mention
+  economics are kept.
+  Alert emails (optional, config scan.alert_mail): job-alert emails from boards that block
+  automated access, such as HigherEdJobs, read from the Mail app like the industry scan's
+  LinkedIn / Indeed alerts. The board itself is never fetched and no email link is opened.
 
 Rule-based pre-filter (settings in config.json "scan"): section / position type, rank
 (drops senior-only and postdoc/visiting), field (JEL prefixes, categories, keywords),
@@ -46,6 +50,7 @@ RSS_SITES = {"CHE": "https://jobs.chronicle.com/jobsrss/?PositionType=12",      
 # economics of education, quantitative methods ...); the categories are large and mostly unrelated
 EDU_RSS = {"CHE": "https://jobs.chronicle.com/jobsrss/?PositionType=24",
            "IHE": "https://careers.insidehighered.com/jobsrss/?FacultyJobs=12"}
+APSIA_RSS = "https://apsia.org/job-and-internship-openings/feed/"      # WordPress feed, full text included
 IMF_JOBS = "https://imf.wd5.myworkdayjobs.com/wday/cxs/imf/IMF"        # Workday public job API
 WB_SITE = "https://worldbankgroup.csod.com/ux/ats/careersite/1/home?c=worldbankgroup"
 WB_SEARCH = "https://us.api.csod.com/rec-job-search/external/jobs"      # Cornerstone public search
@@ -218,6 +223,48 @@ def rss_postings(src, edu=False):
     return out
 
 
+def apsia_postings():
+    """Faculty ads on the APSIA job board (staff jobs and internships share the feed; keep() drops
+    ads that never mention economics). The feed carries the full ad, so no page is fetched."""
+    import email.utils
+    out = []
+    cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=RSS_DAYS)
+    for it in re.findall(r"<item>(.*?)</item>", fetch(APSIA_RSS), re.S):
+        g = lambda t: re.sub(r"<!\[CDATA\[|\]\]>", "", (re.search(rf"<{t}(?: [^>]*)?>(.*?)</{t}>", it, re.S)
+                                                         or [None, ""])[1])
+        m = re.search(r"[?&](?:#038;)?p=(\d+)", g("guid"))
+        title = clean(g("title"))
+        if not m or not re.search(r"professor|lecturer|faculty|instructor", title, re.I):
+            continue
+        try:
+            if email.utils.parsedate_to_datetime(g("pubDate").strip()) < cutoff:
+                continue
+        except (TypeError, ValueError):
+            pass
+        poster = clean(g("dc:creator"))      # the school, or "APSIA" when APSIA staff posted it
+        out.append({"source": "APSIA", "id": f"APSIA-{m.group(1)}", "url": clean(g("link")),
+                    "section": "Academic (policy school)", "title": title,
+                    "employer": "" if poster.upper() == "APSIA" else poster,
+                    "department": "", "location": "", "deadline": "", "fields": [], "field_names": [],
+                    "text": clean(g("description"))})     # content:encoded only holds "appeared first on"
+    return out
+
+
+def alert_postings(m, state):
+    """Postings listed in job-alert emails (config scan.alert_mail, same layout as industry.alert_mail).
+    Returns the postings and the ids of the emails read; the emails' links are never opened."""
+    from industry_scan import alert_jobs, alert_messages
+    msgs = alert_messages(m, set(state.get("mail_seen", [])))
+    out = []
+    for msg in msgs:
+        for x in alert_jobs(msg):
+            out.append({"source": x["source"], "id": x["id"], "url": x["url"] or x.get("email_link", ""),
+                        "section": "Academic (email alert)", "title": x["title"], "employer": x["employer"],
+                        "department": "", "location": x["location"], "deadline": "", "fields": [],
+                        "field_names": [], "text": "EMAIL: " + x["context"], "alert": x["alert"]})
+    return out, [msg["id"] for msg in msgs]
+
+
 def rss_details(x):
     """Fill location and full text from the job page (Madgex layout)."""
     page = fetch(x["url"])
@@ -245,8 +292,11 @@ def keep(x, sc, today):
             return False, "section"
     elif x["source"] in ("IMF", "WB"):
         pass        # institutions' own career sites; Claude judges fit
-    elif x["source"] in RSS_SITES:
-        pass        # Economics category of academic boards; fields judged later from full text
+    elif x["source"] in RSS_SITES or x.get("alert"):
+        pass        # Economics category of academic boards / the user's own alerts; fields judged later
+    elif x["source"] == "APSIA":
+        if not re.search(r"econom", x["title"] + " " + x["text"], re.I):
+            return False, "field"     # international relations, security, area studies ...
     else:
         types = [t.strip() for t in x["section"].split(";")]
         if not any(t in sc["ejm_position_types"] for t in types):
@@ -265,12 +315,13 @@ def keep(x, sc, today):
         head_text = (x["title"] + " " + x["text"]).lower()
         if not any(k.lower() in head_text for k in sc.get("education_keywords", [])):
             return False, "field"
-    generic = x["source"] in RSS_SITES and re.search(r"faculty|professor", x["title"], re.I)
+    board = x["source"] in RSS_SITES or x["source"] == "APSIA" or x.get("alert")
+    generic = board and re.search(r"faculty|professor", x["title"], re.I)
     if not (JUNIOR.search(head) or generic) and "Assistant Professor" not in x["section"] and "Lecturer" not in x["section"]:
         return False, "rank"
     if x["deadline"] and x["deadline"] < today and x["source"] in ("JOE", "IMF", "WB"):
         return False, "deadline"
-    if x["source"] in RSS_SITES:
+    if board:
         return True, ""
     if "nonacademic" in x["section"].lower():
         return True, ""     # policy jobs: field labels are broad; Claude judges fit from the full text
@@ -307,7 +358,7 @@ def main():
     posts, errors = [], []
     sources = [("JOE", joe_postings), ("EJM", ejm_postings),
                ("CHE", lambda: rss_postings("CHE")), ("IHE", lambda: rss_postings("IHE")),
-               ("IMF", imf_postings), ("WB", wb_postings)]
+               ("IMF", imf_postings), ("WB", wb_postings), ("APSIA", apsia_postings)]
     if sc.get("education_keywords"):
         sources += [("CHE education", lambda: rss_postings("CHE", edu=True)),
                     ("IHE education", lambda: rss_postings("IHE", edu=True))]
@@ -316,6 +367,14 @@ def main():
             posts += fn()
         except Exception as e:  # keep going if one source is down
             errors.append(f"{name}: {e}")
+    m = sc.get("alert_mail") or {}
+    mail_read = []
+    if m.get("account") and not m["account"].startswith("<") and "--no-mail" not in sys.argv:
+        try:
+            got, mail_read = alert_postings(m, state)
+            posts += got
+        except (Exception, SystemExit) as e:
+            errors.append(f"alert mail: {e}")
 
     stats, new, dropped = {}, [], set()
     for x in posts:
@@ -347,7 +406,7 @@ def main():
         ttl = " ".join([w for w in re.findall(r"[a-z]+", x["title"].lower()) if w not in ("of", "in", "and", "the")][:3])
         return emp + "|" + ttl
     merged = {}
-    order = {"JOE": 0, "EJM": 1, "IMF": 2, "WB": 3, "CHE": 4, "IHE": 5}
+    order = {"JOE": 0, "EJM": 1, "IMF": 2, "WB": 3, "CHE": 4, "IHE": 5, "APSIA": 6}   # alert emails last
     for x in sorted(new, key=lambda x: order.get(x["source"], 9)):
         k = key(x)
         if k in merged:
@@ -364,6 +423,7 @@ def main():
               open(out_path, "w"), indent=1, ensure_ascii=False)
     # remember what the rules dropped; candidates are marked seen by leads.py add once judged
     state["seen"] = sorted(set(state["seen"]) | dropped)
+    state["mail_seen"] = sorted(set(state.get("mail_seen", [])) | set(mail_read))
     state["last_run"] = today
     json.dump(state, open(state_path, "w"))
     print(f"{len(posts)} postings fetched, {len(new)} new candidates -> {out_path}")

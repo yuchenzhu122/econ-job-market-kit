@@ -257,6 +257,34 @@ def ensure_submitted_column(ws):
     return ensure_date_column(ws, "Submitted")
 
 
+# academic application systems that email each letter writer a request link once you list them
+LETTER_SYSTEMS = ("interfolio", "joe", "econjobmarket", "academicjobsonline")
+
+
+def default_letters_to(apply_via):
+    """'Letters To' text for a row that has none yet: the system's request email for the academic
+    systems above, else '' (read the ad)."""
+    via = str(apply_via or "").strip()
+    if any(k in via.lower() for k in LETTER_SYSTEMS):
+        return f"{via}: the system emails you a request"
+    return ""
+
+
+def widen_filter(ws, col):
+    """Stretch the header filter (and any saved sort) to cover column `col`. A column outside the
+    filter does not move when the user sorts the rows in Excel, so its values end up on the wrong rows."""
+    import re
+    from openpyxl.utils import column_index_from_string, get_column_letter as L
+    af = ws.auto_filter
+    m = re.fullmatch(r"([A-Z]+)(\d+):([A-Z]+)(\d+)", af.ref or "")
+    if not m or column_index_from_string(m.group(3)) >= col:
+        return
+    af.ref = f"{m.group(1)}{m.group(2)}:{L(col)}{m.group(4)}"
+    s = af.sortState
+    if s is not None and s.ref:
+        s.ref = re.sub(r":[A-Z]+", f":{L(col)}", s.ref, count=1)
+
+
 def ensure_text_column(ws, name, width=22):
     """Add a plain text column (e.g. 'Field') at the right edge of an older Tracker sheet if it is
     missing. Returns its index."""
@@ -274,6 +302,7 @@ def ensure_text_column(ws, name, width=22):
     ws.column_dimensions[L(col)].width = width
     for r in range(5, 155):
         ws.cell(row=r, column=col).alignment = Alignment(wrap_text=True, vertical="top")
+    widen_filter(ws, col)
     return col
 
 
@@ -302,4 +331,5 @@ def ensure_date_column(ws, name):
     d.error = "Enter a date, e.g. 11/15/2026."
     ws.add_data_validation(d)
     d.add(f"{L(col)}5:{L(col)}154")
+    widen_filter(ws, col)
     return col

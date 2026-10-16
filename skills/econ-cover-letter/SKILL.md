@@ -83,6 +83,9 @@ there first), otherwise in `config.json`
      --position "<exact title>" --variant <research|teaching> --fit "<paragraph>" \
      --enclosures "<what is actually attached, e.g. CV, job market paper, and teaching evaluations>"
    ```
+   Options: `--short jmp,other_research,teaching` uses the `<key>_short` versions of shared
+   paragraphs (when the knowledge base has them) to make room for a longer fit paragraph;
+   `--fit-first` puts the fit paragraph right after the opening.
    Pass `--enclosures` whenever the posting's material list differs from the default
    closing (CV, job market paper, research statement, teaching statement); the letter must
    never claim an enclosure that is not being submitted.

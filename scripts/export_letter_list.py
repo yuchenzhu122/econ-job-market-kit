@@ -6,9 +6,10 @@ Reads the Tracker sheet of every tracker (academic and, if set up, industry), ke
 separate, read-only-style workbook to config["letter_share_file"] (e.g. a file in OneDrive or
 Google Drive). Share that file's link once with your letter writers; re-running this script
 overwrites the same file, so the link keeps working and always shows the latest list.
-Only the columns writers need are copied (deadline, type of job, the fields the ad asks for, where to submit, link, your
+Only the columns writers need are copied (type of job, the fields the ad asks for, link, how to send the letter (Letters To), deadline, your
 status, the date you applied, and when letters are due), plus one column per writer; notes stay private.
-Submit Letter Via is the tracker's optional Letters Via column, else Apply Via.
+Letters To is the tracker's Letters To column (older trackers: Letters Via); when empty it is the
+request email of an academic system in Apply Via (Interfolio, JOE, EJM, AJO), else 'Not known yet'.
 Letters Due comes from the tracker's Letters Due column (blank until known); Deadline is the
 application deadline.
 
@@ -36,13 +37,22 @@ from openpyxl.styles import Protection
 from openpyxl.utils import get_column_letter as L
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from common import jm_path, load_config, trackers
+from common import default_letters_to, jm_path, load_config, trackers
 from gsheet import WRITER_CHOICES, row_keys
 
 # colors for the Status column, same as the tracker
 STATUS_COLORS = [("Not started", "EDEDED", "595959"), ("In progress", "FFEB9C", "9C5700"),
                  ("Submitted", "C6EFCE", "006100"), ("Interview", "BDD7EE", "1F3864"),
                  ("Flyout", "9BC2E6", "1F3864"), ("Offer", "70AD47", "FFFFFF")]
+
+
+# #, Employer, Position and Type stay in view while scrolling right
+FROZEN_COLS = 4
+
+
+def _lines(text, char_width, width):
+    """Rough number of wrapped lines for text in a box `width` characters wide."""
+    return -(-len(text or "") * char_width // width) or 1
 
 
 def hand_columns(cfg):
@@ -133,6 +143,17 @@ def _write(cfg, srcs, dst, hand, prev, gsheet_ok):
     for src in srcs:
         rows += _tracker_rows(cfg, src, hand, prev)
     rows.sort(key=lambda x: x["Deadline"] or dt.date(2099, 12, 31))
+    # what was typed for a position that no longer needs letters (Letters? changed, or the row was
+    # removed) leaves the list; say so, so it can be copied back if that was a mistake
+    used = {k for x in rows for k in row_keys(x["Link"], x["Employer"], x["Position"])}
+    seen = set()
+    for k, got in (prev or {}).items():
+        if id(got) in seen or not k.startswith("E:"):
+            continue
+        seen.add(id(got))
+        keys = [j for j, g in prev.items() if g is got]
+        if not any(j in used for j in keys):
+            print(f"NOTE: no longer on the list, so this is dropped: {k[2:]} -> {got}")
     _save(cfg, rows, dst, hand, gsheet_ok)
 
 
@@ -140,7 +161,7 @@ def _tracker_rows(cfg, src, hand, prev):
     """Rows needing letters from one tracker, with what writers typed on the shared list (prev)."""
     ws = load_workbook(src, data_only=False)["Tracker"]
     hdr = {ws.cell(row=4, column=c).value: c for c in range(1, ws.max_column + 1) if ws.cell(row=4, column=c).value}
-    need = ["Employer", "Position", "Type", "Apply Via", "Link", "Deadline", "Status", "Letters?"]
+    need = ["Employer", "Position", "Type", "Link", "Deadline", "Status", "Letters?"]  # Apply Via is optional
     missing = [h for h in need if h not in hdr]
     if missing:
         raise SystemExit(f"{os.path.basename(src)} is missing columns: {missing}")
@@ -161,6 +182,10 @@ def _tracker_rows(cfg, src, hand, prev):
         if isinstance(due, dt.datetime):
             due = due.date()
         field = get("Field") if "Field" in hdr else None
+        # "Letters Via" is the older name of the same optional tracker column
+        letters_to = next((str(get(c) or "").strip() for c in ("Letters To", "Letters Via")
+                           if c in hdr and str(get(c) or "").strip()), "") \
+            or default_letters_to(get("Apply Via") if "Apply Via" in hdr else None) or "Not known yet"
         sub = get("Submitted") if "Submitted" in hdr else None
         if isinstance(sub, dt.datetime):
             sub = sub.date()
@@ -170,9 +195,7 @@ def _tracker_rows(cfg, src, hand, prev):
                 got[w] = "Received"
         rows.append({"Deadline": d, "Letters Due": due, "Submitted": sub, "Employer": emp, "Position": get("Position"), "Type": get("Type"),
                      "Field": field,
-                     # "Letters Via" (optional tracker column) when letters go somewhere other than the application
-                     "Apply Via": (get("Letters Via") if "Letters Via" in hdr else None) or get("Apply Via"),
-                     "Link": get("Link"), "Status": status,
+                     "Letters To": letters_to, "Link": get("Link"), "Status": status,
                      **{h: got.get(h, "") for h in hand}})
     return rows
 
@@ -200,11 +223,18 @@ def _save(cfg, rows, dst, hand, gsheet_ok):
                 f"Comments are welcome in your Comments column; everything else is locked. Last updated "
                 f"{dt.date.today().strftime('%B %-d, %Y')}. Thank you for your support!")
     sh["A2"].font = Font(name=FONT, size=10, italic=True, color="555555")
+    # text cannot overflow past the frozen columns, so the title and note wrap inside them
+    for r in (1, 2):
+        sh.merge_cells(start_row=r, start_column=1, end_row=r, end_column=FROZEN_COLS)
+        sh.cell(row=r, column=1).alignment = Alignment(wrap_text=True, vertical="top")
     # no formulas: the file is mostly viewed in a browser preview (Dropbox/OneDrive), which does not
     # recalculate them, so a "Days Left" formula would show up blank
-    cols = [("#", 5), ("Deadline", 13), ("Employer", 30), ("Position", 32), ("Type", 16), ("Field", 20),
-            ("Submit Letter Via", 20), ("Link", 30), ("Status", 13), ("I Applied On", 13), ("Letters Due", 13)]
-    LINK, STATUS, DATES = 8, 9, (2, 10, 11)
+    cols = [("#", 5), ("Employer", 30), ("Position", 32), ("Type", 16), ("Field", 20),
+            ("Link", 30), ("Letters To", 26), ("Deadline", 13), ("Status", 13), ("I Applied On", 13), ("Letters Due", 13)]
+    LINK, STATUS, DATES = 6, 9, (8, 10, 11)
+    frozen_width = sum(w for _, w in cols[:FROZEN_COLS])
+    sh.row_dimensions[1].height = 20 * _lines(sh["A1"].value, 1.6, frozen_width)
+    sh.row_dimensions[2].height = 13 * _lines(sh["A2"].value, 1.0, frozen_width)
     HAND = [(len(cols) + 1 + i, kind, who) for i, (_, _, kind, who) in enumerate(hand_columns(cfg))]
     cols += [(h, w) for h, w, *_ in hand_columns(cfg)]
     WCOLS = [c for c, kind, _ in HAND if kind == "status"]
@@ -212,7 +242,7 @@ def _save(cfg, rows, dst, hand, gsheet_ok):
         c = sh.cell(row=4, column=i, value=h)
         c.font = fh; c.fill = PatternFill("solid", fgColor=accent); c.alignment = ctr; c.border = bd
         sh.column_dimensions[L(i)].width = w
-    table = [[k, x["Deadline"], x["Employer"], x["Position"], x["Type"], x["Field"], x["Apply Via"], x["Link"], x["Status"], x["Submitted"], x["Letters Due"]]
+    table = [[k, x["Employer"], x["Position"], x["Type"], x["Field"], x["Link"], x["Letters To"], x["Deadline"], x["Status"], x["Submitted"], x["Letters Due"]]
              + [x[h] for h in hand] for k, x in enumerate(rows, start=1)]
     for k, (x, vals) in enumerate(zip(rows, table), start=1):
         r = 4 + k
@@ -234,7 +264,7 @@ def _save(cfg, rows, dst, hand, gsheet_ok):
         for text, bg, fg in choices:
             sh.conditional_formatting.add(f"{a}5:{b}{last}", FormulaRule(
                 formula=[f'{a}5="{text}"'], fill=PatternFill("solid", fgColor=bg), font=Font(name=FONT, color=fg)))
-    sh.freeze_panes = "A5"
+    sh.freeze_panes = sh.cell(row=5, column=FROZEN_COLS + 1)
     sh.sheet_view.showGridLines = False
     # locked except the hand-filled columns (writer status and comments), which anyone with the link can edit
     for c, kind, _ in HAND:
@@ -249,7 +279,7 @@ def _save(cfg, rows, dst, hand, gsheet_ok):
     # ...but still let viewers hide/resize columns and rows, sort and filter (False = allowed)
     for opt in ("formatColumns", "formatRows", "sort", "autoFilter"):
         setattr(sh.protection, opt, False)
-    # columns to hide on every export (headers, e.g. ["Submit Letter Via"]); set in config.json
+    # columns to hide on every export (headers, e.g. ["Letters To"]); set in config.json
     for i, (h, _) in enumerate(cols, start=1):
         if h in cfg.get("letter_share_hide", []):
             sh.column_dimensions[L(i)].hidden = True
@@ -263,6 +293,7 @@ def _save(cfg, rows, dst, hand, gsheet_ok):
             from gsheet import push_letter_list
             url = push_letter_list(cfg, sh["A1"].value, sh["A2"].value, cols, table, link_col=LINK, date_cols=DATES,
                                    status_col=STATUS, status_colors=STATUS_COLORS, hand_cols=HAND,
+                                   frozen_cols=FROZEN_COLS,
                                    hide=cfg.get("letter_share_hide", []))
             print(f"{len(rows)} position(s) -> Google Sheet {url}")
         except Exception as e:
