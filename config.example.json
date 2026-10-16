@@ -95,7 +95,25 @@
     ],
     "priority_types": [
       "Teaching-focused"
-    ]
+    ],
+    "alert_mail": {
+      "_comment": "Optional. Job-alert emails for boards that block scripts (HigherEdJobs): create the alert on the board's site, sent to this Mail account. After the first alert arrives, check its sender and job-link format match the board's senders and link.",
+      "account": "<Mail account name>",
+      "mailboxes": [
+        "INBOX"
+      ],
+      "days": 14,
+      "boards": [
+        {
+          "name": "HigherEdJobs",
+          "code": "HEJ",
+          "senders": [
+            "higheredjobs.com"
+          ],
+          "link": "higheredjobs\\.com/.*[?&]JobCode=\\d+"
+        }
+      ]
+    }
   },
   "letter_share_hide": [],
   "mail": {
@@ -111,7 +129,13 @@
       "Junk Email"
     ],
     "more_accounts": [
-      {"_comment": "Optional: another Mail.app account to read, e.g. the address you use for industry applications. Gmail folders: INBOX, [Gmail]/Spam (or the localized name).", "account": "<Mail.app account name, e.g. Google>", "mailboxes": ["INBOX"]}
+      {
+        "_comment": "Optional: another Mail.app account to read, e.g. the address you use for industry applications. Gmail folders: INBOX, [Gmail]/Spam (or the localized name).",
+        "account": "<Mail.app account name, e.g. Google>",
+        "mailboxes": [
+          "INBOX"
+        ]
+      }
     ]
   },
   "industry": {
