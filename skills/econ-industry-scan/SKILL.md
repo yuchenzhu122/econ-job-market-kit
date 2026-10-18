@@ -69,7 +69,9 @@ Write `industry_eval.json` with the Write tool; no ad-hoc scripts.
      citizenship / clearance → skip; "no sponsorship" → Low with the flag first).
 3. Read the full text (`text <n>`) of every High and Medium.
 4. Write `industry_eval.json`: list of `{id, url, source, employer, position, category, type,
-   location, deadline (YYYY-MM-DD or ""), fit, why, flags, also_at}`. `category` = one of the
+   location, deadline (YYYY-MM-DD or ""), fit, fit_reason, why, flags, also_at}`. `fit_reason` = a few words
+   summing up why the fit is High, Medium or Low (e.g. "Strong fit: methods", "Partial fit: level",
+   "Visa / status", "Not read"). `category` = one of the
    config categories; `type` = Consulting / Tech / Finance / Think tank / Research / Government /
    Other; `why` = one sentence tying the job to the user's work; `flags` = visa wording first,
    then level, location, anything unusual. Dates absolute.

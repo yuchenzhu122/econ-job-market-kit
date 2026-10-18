@@ -11,13 +11,15 @@ again; one only in the other tracker's Leads is added with a flag.
 
 evaluated.json is a list of objects with keys:
   id, url, source, employer, position, track (industry: category), type, location, deadline (YYYY-MM-DD or ""),
-  fit (High | Medium | Low | Skip; Skip rows are written in grey with the reason in why), why, flags (string or list), also_at (optional list of other links),
+  fit (High | Medium | Low | Skip; Skip rows are written in grey with the reason in why), fit_reason (a few words that
+  sum up why the fit is what it is, e.g. "Strong fit: field + methods", "Partial fit: level", "Visa / status",
+  "Not read"), why, flags (string or list), also_at (optional list of other links),
   carnegie (academic only, US schools: R1 / R2 / RCU from the 2025 Carnegie Research Activity Designations,
   "—" for a US school with none of these, "Non-US", or "Non-academic")
 deadline may also be text like "Review begins 2026-10-30": the date is used and the text kept in Flags.
 
 Leads columns: Found, Fit, Employer, Position, Track (industry: Category), Type, Location, Deadline, Why, Flags,
-Source, Link, Decision (Add / Maybe / Pass; "Added" once promoted), Carnegie (academic only).
+Source, Link, Decision (Add / Maybe / Pass; "Added" once promoted), Carnegie (academic only), Fit Reason.
 """
 import datetime as dt
 import json
@@ -37,7 +39,9 @@ from common import (close_in_excel, ensure_date_column, ensure_text_column, jm_p
 
 COLS = [("Found", 11), ("Fit", 8), ("Employer", 26), ("Position", 30), ("Track", 12), ("Type", 15),
         ("Location", 16), ("Deadline", 11), ("Why", 44), ("Flags", 26), ("Source", 7), ("Link", 22),
-        ("Decision", 10), ("Carnegie", 11)]      # Carnegie last: scripts address the other columns by position
+        ("Decision", 10), ("Carnegie", 11), ("Fit Reason", 22)]
+# Carnegie and Fit Reason last: scripts address the other columns by position (industry has no Carnegie,
+# so its Fit Reason is column 14)
 FONT = "Arial"
 side = Side(style="thin", color="D0D0D0")
 BD = Border(left=side, right=side, top=side, bottom=side)
@@ -254,6 +258,7 @@ def add(cfg, path, items, kind="academic"):
                 x.get("location"), dl, x.get("why"), flags, x.get("source"), x.get("url"), None]
         if kind != "industry":
             vals.append(x.get("carnegie"))
+        vals.append(x.get("fit_reason"))
         for i, v in enumerate(vals, start=1):
             c = ws.cell(row=r, column=i, value=v)
             c.font = Font(name=FONT, size=10)
