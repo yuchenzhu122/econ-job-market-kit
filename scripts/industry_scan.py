@@ -200,6 +200,13 @@ def unwrap(u, pattern):
 
 
 AGE = re.compile(r"^(just posted|today|active \d+ days? ago|\d+\+? days? ago|posted \d+\+? days? ago)$", re.I)
+# lines in an alert email that start a new section (not part of any job)
+ALERT_BREAK = re.compile(r"^(-{5,}|your job alert for |\d+\+? new jobs? match|jobs you may be interested in)", re.I)
+# button labels and badges printed around a job (never its title, company or location)
+ALERT_NOISE = re.compile(r"^((view|see) job\b.*|apply|apply now|easy apply|apply with resume( & profile)?|new|promoted|save"
+                         r"|actively recruiting|this company is actively (hiring|recruiting)|be an early applicant"
+                         r"|\d+ (company|school) alum(ni)?|\d+ connections?|\d+ applicants?|responsive employer"
+                         r"|\$[\d,.]+.*|manage (job )?alerts?.*|unsubscribe.*)$", re.I)
 
 
 def indeed_blocks(body, msg):
@@ -266,7 +273,9 @@ def alert_jobs(msg):
         if found:
             return found
     out, seen = [], set()
-    skip = re.compile(r"(view job|see job|apply|easy apply|new|promoted|actively recruiting|save)\b", re.I)
+    has_link = [any(re.search(b["link"], unwrap(html.unescape(u).rstrip(">)].,"), b["link"]))
+                    for u in re.findall(r"https?://[^\s<>\"]+", l)) for l in lines]
+    start = 0                # first line of the current job's block (after the previous job's link)
     for i, l in enumerate(lines):
         for u in re.findall(r"https?://[^\s<>\"]+", l):
             u = unwrap(html.unescape(u).rstrip(">)].,"), b["link"])
@@ -276,22 +285,27 @@ def alert_jobs(msg):
             if link in seen:
                 continue
             seen.add(link)
-            above = [x for x in lines[max(0, i - 6):i] if not x.startswith("http") and len(x) < 120 and not skip.match(x)][-3:]
             if anchor.get(link):     # HTML: link text = title; company and location follow the link
                 title = anchor[link]
-                rest = [x for x in lines[i + 1:i + 5] if not x.startswith("http") and len(x) < 120
-                        and not skip.match(x) and x != title][:2]
-            else:                    # plain text: title, company, location above the link
-                title = above[0] if len(above) == 3 else above[-1] if above else ""
-                rest = [x for x in above if x != title]
+                # stop before the next job: its link line, and the link text printed just above it
+                end = next((k - 1 for k in range(i + 1, min(i + 7, len(lines))) if has_link[k]), min(i + 6, len(lines)))
+                own = [x for x in lines[i + 1:end] if not x.startswith("http")]
+                rest = [x for x in own if not ALERT_NOISE.match(x) and x != title][:2]
+                context = " | ".join([title] + own)[:400]
+            else:                    # plain text: title, company, location (then badges) above the link
+                own = [x for x in lines[start:i] if not x.startswith("http") and not ALERT_BREAK.match(x)]
+                fields = [x for x in own if not ALERT_NOISE.match(x) and len(x) < 200][-3:]
+                title, rest = (fields[0], fields[1:]) if fields else ("", [])
+                context = " | ".join(own[-6:])[:400]
             company, location = (rest + ["", ""])[:2]
             if " - " in company and not location:
                 company, location = company.split(" - ", 1)
-            context = " | ".join(x for x in lines[max(0, i - 5):i + 4] if not x.startswith("http"))[:400]
             out.append({"id": f"{b['code']}-{(re.findall(r'[0-9a-f]{6,}', link) or [link])[-1]}",
                         "url": "https://www." + link if b["code"] in ("LI", "IND") else re.sub(r"[?#].*$", "", u),
                         "title": title, "employer": company, "location": location, "posted": msg["date"],
                         "text": "", "context": context, "source": b["code"], "alert": msg["subject"]})
+        if has_link[i]:
+            start = i + 1
     return out
 
 
